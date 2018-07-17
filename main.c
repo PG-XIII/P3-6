@@ -51,14 +51,14 @@ float** normais_triangulos;
 int main(int argc, char **argv)
 {
     carregar_objetos();
-    /*
+    normalizar_triangulos();
     normalizar_vertices();
     int i;
     for(i = 0; i < num_triangulos; i++)
     {
         printf("%f %f %f\n", normais_vertices[i][0], normais_vertices[i][1], normais_vertices[i][2]);
     }
-    */
+    
     return 0;
 }
 
@@ -130,11 +130,13 @@ void carregar_camera()
     //Ortogonalizar V
     float aux1[3];
     float aux2[3];
+    normalizar(N,N);
     proj_vetores(V, N, aux1);
     sub_vet(V, aux1, aux2);
     V[0] = aux2[0];
     V[1] = aux2[1];
     V[2] = aux2[2];
+    normalizar(V,V);
     //Encontrar U
     prod_vetorial(V, N, U);
 }
@@ -212,7 +214,7 @@ void normalizar_vertices()
     int i,j,k;
     float inc = 0;
     float aux1[3] = {0,0,0};
-    /*
+
     normais_vertices = (float**) calloc(num_pontos, sizeof(float));
     for(i = 0; i < num_pontos; i++)
     {
@@ -222,19 +224,21 @@ void normalizar_vertices()
             {
                 if(triangulos[j][k] == (i + 1))
                 {
-                    sum_vet(normais_triangulos[j], aux1, aux1);
+                    sum_vet(aux1, normais_triangulos[j], aux1);
                     inc++;
                 }
             }
         }
 
-        inc = 0;
         mul_escalar(aux1, inc, aux1);
         normalizar(aux1, aux1);
-        normais_vertices[i] = (float**) calloc(3, sizeof(float));
+        normais_vertices[i] = (float*) calloc(3, sizeof(float));
         normais_vertices[i][0] = aux1[0];
         normais_vertices[i][1] = aux1[1];
         normais_vertices[i][2] = aux1[2];
+        inc = 0;
+        aux1[0] = 0;
+        aux1[1] = 0;
+        aux1[2] = 0;
     }
-    */
 }
