@@ -13,11 +13,13 @@ void prod_vetorial(float vec1[], float vec2[], float ret[]);
 void proj_vetores(float vec1[], float vec2[], float ret[]);
 void mul_escalar(float vec[], float k, float ret[]);
 void sub_vet(float vec1[], float vec2[], float ret[]);
+void sum_vet(float vec1[], float vec2[], float ret[]);
 
 void carregar_camera();
 void carregar_iluminacao();
 void carregar_objetos();
 void normalizar_triangulos();
+void normalizar_vertices();
 
 //variaveis da camera
 float C[3];
@@ -31,11 +33,11 @@ float hy;
 //variaveis de iluminacao
 float Pl[3];
 float ka;
-int Ia[3];
+float Ia[3];
 float kd;
 float Od[3];
 float ks;
-int Il[3];
+float Il[3];
 float n;
 
 //variaveis de objeto
@@ -43,18 +45,18 @@ int num_pontos;
 int num_triangulos;
 float** pontos;
 int** triangulos;
-float** normais_pontos;
+float** normais_vertices;
 float** normais_triangulos;
 
 int main(int argc, char **argv)
 {
     carregar_objetos();
     /*
-    normalizar_triangulos();
+    normalizar_vertices();
     int i;
     for(i = 0; i < num_triangulos; i++)
     {
-        printf("%f %f %f\n", normais_triangulos[i][0], normais_triangulos[i][1], normais_triangulos[i][2]);
+        printf("%f %f %f\n", normais_vertices[i][0], normais_vertices[i][1], normais_vertices[i][2]);
     }
     */
     return 0;
@@ -104,6 +106,13 @@ void sub_vet(float vec1[], float vec2[], float ret[])
     ret[2] = vec1[2] - vec2[2];
 }
 
+void sum_vet(float vec1[], float vec2[], float ret[])
+{
+    ret[0] = vec1[0] + vec2[0];
+    ret[1] = vec1[1] + vec2[1];
+    ret[2] = vec1[2] + vec2[2];
+}
+
 void carregar_camera()
 {
     FILE *fp;
@@ -128,7 +137,6 @@ void carregar_camera()
     V[2] = aux2[2];
     //Encontrar U
     prod_vetorial(V, N, U);
-
 }
 
 void carregar_iluminacao()
@@ -140,11 +148,11 @@ void carregar_iluminacao()
     }
     fscanf(fp," %f %f %f", &Pl[0], &Pl[1], &Pl[2]);
     fscanf(fp," %f", &ka);
-    fscanf(fp," %d %d %d", &Ia[0], &Ia[1], &Ia[2]);
+    fscanf(fp," %f %f %f", &Ia[0], &Ia[1], &Ia[2]);
     fscanf(fp," %f", &kd);
     fscanf(fp," %f %f %f", &Od[0], &Od[1], &Od[2]);
     fscanf(fp," %f", &ks);
-    fscanf(fp," %d %d %d", &Il[0], &Il[1], &Il[2]);
+    fscanf(fp," %f %f %f", &Il[0], &Il[1], &Il[2]);
     fscanf(fp," %f", &n);
 
     fclose (fp);
@@ -180,35 +188,53 @@ void carregar_objetos()
 
 void normalizar_triangulos()
 {
-    /*
     int i;
     float aux1[3];
     float aux2[3];
     float aux3[3];
-    float aux4[3];
-    float aux5[3];
     
     normais_triangulos = (float**) calloc(num_triangulos, sizeof(float));
     for(i = 0; i < num_triangulos; i++)
     {
-        printf("%f\n",triangulos[i][0]);
-        aux1[0] = pontos[(int)triangulos[i][0]][0];
-        aux1[1] = pontos[(int)triangulos[i][0]][1];
-        aux1[2] = pontos[(int)triangulos[i][0]][2];
-        aux2[0] = pontos[(int)triangulos[i][1]][0];
-        aux2[1] = pontos[(int)triangulos[i][1]][1];
-        aux2[2] = pontos[(int)triangulos[i][1]][2];
-        sub_vet(aux2, aux1, aux3);
-        aux2[0] = pontos[(int)triangulos[i][2]][0];
-        aux2[1] = pontos[(int)triangulos[i][2]][1];
-        aux2[2] = pontos[(int)triangulos[i][2]][2];
-        sub_vet(aux2, aux1, aux4);
-        prod_vetorial(aux3, aux4, aux5);
-        printf("%f %f %f", aux5[0], aux5[1], aux5[2]);
+        sub_vet(pontos[triangulos[i][1]-1], pontos[triangulos[i][0]-1], aux1);
+        sub_vet(pontos[triangulos[i][2]-1], pontos[triangulos[i][0]-1], aux2);
+        prod_vetorial(aux1, aux2, aux3);
+        normalizar(aux3, aux3);
         normais_triangulos[i] = (float*) calloc(3, sizeof(float));
-        normais_triangulos[i][0] = aux5[0];
-        normais_triangulos[i][1] = aux5[1];
-        normais_triangulos[i][2] = aux5[2];
+        normais_triangulos[i][0] = aux3[0];
+        normais_triangulos[i][1] = aux3[1];
+        normais_triangulos[i][2] = aux3[2];
+    }
+}
+
+void normalizar_vertices()
+{
+    int i,j,k;
+    float inc = 0;
+    float aux1[3] = {0,0,0};
+    /*
+    normais_vertices = (float**) calloc(num_pontos, sizeof(float));
+    for(i = 0; i < num_pontos; i++)
+    {
+        for(j = 0; j < num_triangulos; j++)
+        {
+            for(k = 0; k < 3; k++)
+            {
+                if(triangulos[j][k] == (i + 1))
+                {
+                    sum_vet(normais_triangulos[j], aux1, aux1);
+                    inc++;
+                }
+            }
+        }
+
+        inc = 0;
+        mul_escalar(aux1, inc, aux1);
+        normalizar(aux1, aux1);
+        normais_vertices[i] = (float**) calloc(3, sizeof(float));
+        normais_vertices[i][0] = aux1[0];
+        normais_vertices[i][1] = aux1[1];
+        normais_vertices[i][2] = aux1[2];
     }
     */
 }
