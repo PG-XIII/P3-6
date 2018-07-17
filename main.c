@@ -5,11 +5,14 @@
 #include <GL/glut.h>
 #include <errno.h>
 
+//rotinas auxiliares
+//funcoes que possuem ret como parametro usam ele como destino do resultado da funcao.
 float prod_interno(float vec1[], float vec2[]);
 void normalizar(float vec[], float ret[]);
 void prod_vetorial(float vec1[], float vec2[], float ret[]);
 void proj_vetores(float vec1[], float vec2[], float ret[]);
 void mul_escalar(float vec[], float k, float ret[]);
+void sub_vet(float vec1[], float vec2[], float ret[]);
 
 void carregar_camera();
 void carregar_iluminacao();
@@ -94,11 +97,11 @@ void mul_escalar(float vec[], float k, float ret[])
     ret[2] = vec[2] * k;
 }
 
-void sub_vet(float vet1[], float vet2[], float ret[])
+void sub_vet(float vec1[], float vec2[], float ret[])
 {
-    ret[0] = vet1[0] - vet2[0];
-    ret[1] = vet1[1] - vet2[1];
-    ret[2] = vet1[2] - vet2[2];
+    ret[0] = vec1[0] - vec2[0];
+    ret[1] = vec1[1] - vec2[1];
+    ret[2] = vec1[2] - vec2[2];
 }
 
 void carregar_camera()
