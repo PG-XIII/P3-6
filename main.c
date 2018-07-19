@@ -232,7 +232,7 @@ void normalizar_vertices()
             }
         }
 
-        mul_escalar(aux1, inc, aux1);
+        mul_escalar(aux1, 1/inc, aux1);
         normalizar(aux1, aux1);
         normais_vertices[i] = (float*) calloc(3, sizeof(float));
         normais_vertices[i][0] = aux1[0];
