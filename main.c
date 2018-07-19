@@ -21,6 +21,8 @@ void carregar_objetos();
 void normalizar_triangulos();
 void normalizar_vertices();
 
+void mudanca_base_scc(float vec[], float ret[]);
+
 //variaveis da camera
 float C[3];
 float N[3];
@@ -241,4 +243,11 @@ void normalizar_vertices()
         aux1[1] = 0;
         aux1[2] = 0;
     }
+}
+
+void mudanca_base_scc(float vec[], float ret[])
+{
+    ret[0] = U[0]*(vec[0] - C[0]) + U[1]*(vec[1] - C[1]) + U[2]*(vec[2] - C[2]);
+    ret[1] = V[0]*(vec[0] - C[0]) + V[1]*(vec[1] - C[1]) + V[2]*(vec[2] - C[2]);
+    ret[2] = N[0]*(vec[0] - C[0]) + N[1]*(vec[1] - C[1]) + N[2]*(vec[2] - C[2]);
 }
