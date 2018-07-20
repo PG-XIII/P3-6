@@ -3,6 +3,7 @@
 #include <ctype.h>
 #include <math.h>
 #include <GL/glut.h>
+//#include <GL/glut.h> // Essa é a versão do glut.h no mac
 #include <errno.h>
 
 //rotinas auxiliares
@@ -62,104 +63,6 @@ int main(int argc, char **argv)
     }
     
     return 0;
-}
-
-float prod_interno(float vec1[], float vec2[])
-{
-    return (vec1[0]*vec2[0] + vec1[1]*vec2[1] + vec1[2]*vec2[2]);
-}
-
-void normalizar(float vec[], float ret[])
-{
-    float mod = sqrt(prod_interno(vec,vec));
-
-    ret[0] = vec[0]/mod;
-    ret[1] = vec[1]/mod;
-    ret[2] = vec[2]/mod;
-}
-
-void prod_vetorial(float vec1[], float vec2[], float ret[])
-{
-    ret[0] = vec1[1]*vec2[2] - vec1[2]*vec2[1];
-    ret[1] = vec1[2]*vec2[0] - vec1[0]*vec2[2];
-    ret[2] = vec1[0]*vec2[1] - vec1[1]*vec2[0];
-}
-
-void proj_vetores(float vec1[], float vec2[], float ret[])
-{
-    float prop = prod_interno(vec1,vec2)/prod_interno(vec2,vec2);
-
-    ret[0] = prop * vec2[0];
-    ret[1] = prop * vec2[1];
-    ret[2] = prop * vec2[2];
-}
-
-void mul_escalar(float vec[], float k, float ret[])
-{
-    ret[0] = vec[0] * k;
-    ret[1] = vec[1] * k;
-    ret[2] = vec[2] * k;
-}
-
-void sub_vet(float vec1[], float vec2[], float ret[])
-{
-    ret[0] = vec1[0] - vec2[0];
-    ret[1] = vec1[1] - vec2[1];
-    ret[2] = vec1[2] - vec2[2];
-}
-
-void sum_vet(float vec1[], float vec2[], float ret[])
-{
-    ret[0] = vec1[0] + vec2[0];
-    ret[1] = vec1[1] + vec2[1];
-    ret[2] = vec1[2] + vec2[2];
-}
-
-void carregar_camera()
-{
-    FILE *fp;
-    fp = fopen("camera.cfg","r");
-    if (fp == NULL) {
-        printf ("File not created okay, errno = %d\n", errno);
-    }
-    fscanf(fp," %f %f %f", &C[0], &C[1], &C[2]);
-    fscanf(fp," %f %f %f", &N[0], &N[1], &N[2]);
-    fscanf(fp," %f %f %f", &V[0], &V[1], &V[2]);
-    fscanf(fp," %f %f %f", &d, &hx, &hy);
-
-    fclose (fp);
-
-    //Ortogonalizar V
-    float aux1[3];
-    float aux2[3];
-    normalizar(N,N);
-    proj_vetores(V, N, aux1);
-    sub_vet(V, aux1, aux2);
-    V[0] = aux2[0];
-    V[1] = aux2[1];
-    V[2] = aux2[2];
-    normalizar(V,V);
-    //Encontrar U
-    prod_vetorial(V, N, U);
-}
-
-void carregar_iluminacao()
-{
-    FILE *fp;
-    fp = fopen("iluminacao.txt","r");
-    if (fp == NULL) {
-        printf ("File not created okay, errno = %d\n", errno);
-    }
-    fscanf(fp," %f %f %f", &Pl[0], &Pl[1], &Pl[2]);
-    fscanf(fp," %f", &ka);
-    fscanf(fp," %f %f %f", &Ia[0], &Ia[1], &Ia[2]);
-    fscanf(fp," %f", &kd);
-    fscanf(fp," %f %f %f", &Od[0], &Od[1], &Od[2]);
-    fscanf(fp," %f", &ks);
-    fscanf(fp," %f %f %f", &Il[0], &Il[1], &Il[2]);
-    fscanf(fp," %f", &n);
-
-    fclose (fp);
 }
 
 void carregar_objetos()
@@ -243,6 +146,106 @@ void normalizar_vertices()
         aux1[1] = 0;
         aux1[2] = 0;
     }
+}
+
+void carregar_camera()
+{
+    FILE *fp;
+    fp = fopen("camera.cfg","r");
+    if (fp == NULL) {
+        printf ("File not created okay, errno = %d\n", errno);
+    }
+    fscanf(fp," %f %f %f", &C[0], &C[1], &C[2]);
+    fscanf(fp," %f %f %f", &N[0], &N[1], &N[2]);
+    fscanf(fp," %f %f %f", &V[0], &V[1], &V[2]);
+    fscanf(fp," %f %f %f", &d, &hx, &hy);
+
+    fclose (fp);
+
+    //Ortogonalizar V
+    float aux1[3];
+    float aux2[3];
+    normalizar(N,N);
+    proj_vetores(V, N, aux1);
+    sub_vet(V, aux1, aux2);
+    V[0] = aux2[0];
+    V[1] = aux2[1];
+    V[2] = aux2[2];
+    normalizar(V,V);
+    //Encontrar U
+    prod_vetorial(V, N, U);
+}
+
+void carregar_iluminacao()
+{
+    FILE *fp;
+    fp = fopen("iluminacao.txt","r");
+    if (fp == NULL) {
+        printf ("File not created okay, errno = %d\n", errno);
+    }
+    fscanf(fp," %f %f %f", &Pl[0], &Pl[1], &Pl[2]);
+    fscanf(fp," %f", &ka);
+    fscanf(fp," %f %f %f", &Ia[0], &Ia[1], &Ia[2]);
+    fscanf(fp," %f", &kd);
+    fscanf(fp," %f %f %f", &Od[0], &Od[1], &Od[2]);
+    fscanf(fp," %f", &ks);
+    fscanf(fp," %f %f %f", &Il[0], &Il[1], &Il[2]);
+    fscanf(fp," %f", &n);
+
+    fclose (fp);
+}
+
+/* Funções Algébricas */
+
+float prod_interno(float vec1[], float vec2[])
+{
+    return (vec1[0]*vec2[0] + vec1[1]*vec2[1] + vec1[2]*vec2[2]);
+}
+
+void normalizar(float vec[], float ret[])
+{
+    float mod = sqrt(prod_interno(vec,vec));
+
+    ret[0] = vec[0]/mod;
+    ret[1] = vec[1]/mod;
+    ret[2] = vec[2]/mod;
+}
+
+void prod_vetorial(float vec1[], float vec2[], float ret[])
+{
+    ret[0] = vec1[1]*vec2[2] - vec1[2]*vec2[1];
+    ret[1] = vec1[2]*vec2[0] - vec1[0]*vec2[2];
+    ret[2] = vec1[0]*vec2[1] - vec1[1]*vec2[0];
+}
+
+void proj_vetores(float vec1[], float vec2[], float ret[])
+{
+    float prop = prod_interno(vec1,vec2)/prod_interno(vec2,vec2);
+
+    ret[0] = prop * vec2[0];
+    ret[1] = prop * vec2[1];
+    ret[2] = prop * vec2[2];
+}
+
+void mul_escalar(float vec[], float k, float ret[])
+{
+    ret[0] = vec[0] * k;
+    ret[1] = vec[1] * k;
+    ret[2] = vec[2] * k;
+}
+
+void sub_vet(float vec1[], float vec2[], float ret[])
+{
+    ret[0] = vec1[0] - vec2[0];
+    ret[1] = vec1[1] - vec2[1];
+    ret[2] = vec1[2] - vec2[2];
+}
+
+void sum_vet(float vec1[], float vec2[], float ret[])
+{
+    ret[0] = vec1[0] + vec2[0];
+    ret[1] = vec1[1] + vec2[1];
+    ret[2] = vec1[2] + vec2[2];
 }
 
 void mudanca_base_scc(float vec[], float ret[])
