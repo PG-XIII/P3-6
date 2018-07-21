@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <math.h>
-#include <GL/glut.h>
-//#include <GL/glut.h> // Essa é a versão do glut.h no mac
+//#include <GL/glut.h>
+#include <GLUT/glut.h> // Essa é a versão do glut.h no mac
 #include <errno.h>
 
 //rotinas auxiliares
