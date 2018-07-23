@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <math.h>
-//#include <GL/glut.h>
-#include <GLUT/glut.h> // Essa é a versão do glut.h no mac
+#include <GL/glut.h>
+//#include <GLUT/glut.h> // Essa é a versão do glut.h no mac
 #include <errno.h>
 
 //rotinas auxiliares
@@ -62,30 +62,40 @@ float** normais_triangulos;
 float** z_buffer_d;
 float** z_buffer_cor;
 
-// Variáveis da interface gráfica
-int width = 640;
-int height = 320;
+// Resolucao da interface gráfica
+#define width 640
+#define height 320
 
 int main(int argc, char **argv)
 {
     glutInit(&argc,argv);
     glutInitDisplayMode(GLUT_RGB);
-    glutInitWindowSize(500,500);
+    glutInitWindowSize(width,height);
     glutInitWindowPosition(100,100);
     glutCreateWindow("PG-13");
     glClearColor(0.0,0.0,0.0,0.0);
     glClear(GL_COLOR_BUFFER_BIT);
     glLoadIdentity();
-    gluOrtho2D( 0.0, 500.0, 500.0,0.0 );
+    gluOrtho2D(0.0, width, height, 0.0);
+
+    carregar_camera();
+    carregar_objetos();
+    normalizar_triangulos();
+    normalizar_vertices();
+    init_z_buffer();
+    preencher_z_buffer();
 
     glBegin(GL_POINTS);
         glColor3f(1,1,1);
         int i,j;
-        for(i=0; i < 250; i++)
+        for(i=0; i < height; i++)
         {
-            for(j=0; j < 250; j++)
+            for(j=0; j < width; j++)
             {
-                glVertex2i(i,j);
+                if(z_buffer_d[i][j] < INFINITY)
+                {
+                    glVertex2i(j,i);
+                }
             }
         }
     glEnd();
@@ -147,8 +157,7 @@ void normalizar_triangulos()
 void normalizar_vertices()
 {
     int i,j,k;
-    float inc = 0;
-    float aux1[3] = {0,0,0};
+    float aux[3] = {0,0,0};
 
     normais_vertices = (float**) calloc(num_pontos, sizeof(float));
     for(i = 0; i < num_pontos; i++)
@@ -159,22 +168,19 @@ void normalizar_vertices()
             {
                 if(triangulos[j][k] == (i + 1))
                 {
-                    sum_vet(aux1, normais_triangulos[j], aux1);
-                    inc++;
+                    sum_vet(aux, normais_triangulos[j], aux);
                 }
             }
         }
 
-        mul_escalar(aux1, 1/inc, aux1);
-        normalizar(aux1, aux1);
+        normalizar(aux, aux);
         normais_vertices[i] = (float*) calloc(3, sizeof(float));
-        normais_vertices[i][0] = aux1[0];
-        normais_vertices[i][1] = aux1[1];
-        normais_vertices[i][2] = aux1[2];
-        inc = 0;
-        aux1[0] = 0;
-        aux1[1] = 0;
-        aux1[2] = 0;
+        normais_vertices[i][0] = aux[0];
+        normais_vertices[i][1] = aux[1];
+        normais_vertices[i][2] = aux[2];
+        aux[0] = 0;
+        aux[1] = 0;
+        aux[2] = 0;
     }
 }
 
@@ -228,7 +234,7 @@ void carregar_iluminacao()
 void projetar_triangulo(int *triangulo, float **projecao) {
     int i;
     for (i = 0; i < 3; i++) {
-        float* p = pontos[triangulo[i]];
+        float* p = pontos[triangulo[i]-1];
         float pbarra[3]; // Ponto em coordenadas de câmera
 
         mudanca_base_scc(p, pbarra);
@@ -291,7 +297,7 @@ void init_z_buffer() {
 
         int j;
         for (j = 0; j < width; j++) {
-            z_buffer_d[i][j] = 999999999;
+            z_buffer_d[i][j] = INFINITY;
             z_buffer_cor[i][j] = 0;
         }
     }
@@ -308,9 +314,9 @@ void preencher_z_buffer() {
         projetar_triangulo(triangulos[i], projecao);
         
         // Ordenar os pontos pela coordenada y
-        float max = -999999999;
+        float max = -INFINITY;
         int max_i = 0;
-        float min = 999999999;
+        float min = INFINITY;
         int min_i = 0;
         for (j = 0; j < 3; j++) {
             if (projecao[j][1] > max) {
