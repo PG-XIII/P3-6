@@ -16,13 +16,18 @@ void mul_escalar(float vec[], float k, float ret[]);
 void sub_vet(float vec1[], float vec2[], float ret[]);
 void sum_vet(float vec1[], float vec2[], float ret[]);
 void projetar_triangulo(int *triangulo, float **projecao);
-void scanline(float **projecao, int** ret);
+void coordenadas_baricentricas(int* ponto, float** triangulo, float* coordenadas);
+void resolver_sistema(float** matriz, int n, int m, float* resultado);
+void escalonar(float** matriz, int n, int m);
 
 void carregar_camera();
 void carregar_iluminacao();
 void carregar_objetos();
 void normalizar_triangulos();
 void normalizar_vertices();
+void init_z_buffer();
+void preencher_z_buffer();
+void scanline(float **projecao, int** ret);
 
 void mudanca_base_scc(float vec[], float ret[]);
 
@@ -54,8 +59,8 @@ float** normais_vertices;
 float** normais_triangulos;
 
 // Variáveis do z-buffer
-int** ds;
-int** cores;
+float** z_buffer_d;
+float** z_buffer_cor;
 
 // Variáveis da interface gráfica
 int width = 640;
@@ -260,13 +265,30 @@ void scanline(float** projecao, int** ret) {
 
 /* Funções do z-buffer */
 
+void init_z_buffer() {
+    z_buffer_d = (float**)malloc(height*sizeof(float*));
+    z_buffer_cor = (float**)malloc(height*sizeof(float*));
+
+    int i;
+    for (i = 0; i < height; i++) {
+        z_buffer_d[i] = (float*)malloc(width*sizeof(float));
+        z_buffer_cor[i] = (float*)malloc(width*sizeof(float));
+
+        int j;
+        for (j = 0; j < width; j++) {
+            z_buffer_d[i][j] = 999999999;
+            z_buffer_cor[i][j] = 0;
+        }
+    }
+}
+
 void preencher_z_buffer() {
     int i;
     for (i = 0; i < num_triangulos; i++) {
         float **projecao = (float**)malloc(3*sizeof(float*));
-        int i;
-        for (i = 0; i < 3; i++) {
-            projecao[i] = (float*)malloc(2*sizeof(float));
+        int j;
+        for (j = 0; j < 3; j++) {
+            projecao[j] = (float*)malloc(2*sizeof(float));
         }
         projetar_triangulo(triangulos[i], projecao);
         
@@ -275,15 +297,15 @@ void preencher_z_buffer() {
         int max_i = 0;
         float min = 999999999;
         int min_i = 0;
-        for (i = 0; i < 3; i++) {
-            if (projecao[i][1] > max) {
-                max_i = i;
-                max = projecao[i][1];
+        for (j = 0; j < 3; j++) {
+            if (projecao[j][1] > max) {
+                max_i = j;
+                max = projecao[j][1];
             } 
        
-            if (projecao[i][1] < min) {
-                min_i = i;
-                min = projecao[i][1];
+            if (projecao[j][1] < min) {
+                min_i = j;
+                min = projecao[j][1];
             }
         }
 
@@ -297,16 +319,35 @@ void preencher_z_buffer() {
 
         int n_linhas = floor(max) - floor(min);
         int **xminmax = (int**)malloc(n_linhas * sizeof(int*));
-        for (i = 0; i < n_linhas; i++) {
-            xminmax[i] = (int*)malloc(2*sizeof(int));
+        for (j = 0; j < n_linhas; j++) {
+            xminmax[j] = (int*)malloc(2*sizeof(int));
         }
 
         scanline(projecao, xminmax);
 
-        int j;
-        for (i = 0; i < n_linhas; i++) {
-            for (j = xminmax[i][0]; j < xminmax[i][1]; j++) {
-                
+        int k;
+        for (j = 0; j < n_linhas; j++) {
+            for (k = xminmax[j][0]; k < xminmax[j][1]; k++) {
+                int* ponto = (int*)malloc(2*sizeof(int));
+                ponto[0] = k; ponto[1] = floor(top[1]) + j;
+                float* coordenadas = (float*)malloc(3*sizeof(float));
+                coordenadas_baricentricas(ponto, projecao, coordenadas);
+
+                float P[3];
+                float aux1[3];
+                float aux2[3];
+                float aux3[3];
+                mul_escalar(pontos[triangulos[i][min_i]], coordenadas[0], aux1);
+                mul_escalar(pontos[triangulos[i][max_i]], coordenadas[2], aux2);
+                sum_vet(aux1, aux2, aux3);
+                mul_escalar(pontos[triangulos[i][3-min_i-max_i]], coordenadas[1], aux1);
+                sum_vet(aux3, aux1, P);
+
+                if (z_buffer_d[(int)floor(top[1])+j][k] > P[2]) {
+                    // O ponto calculado está mais próximo do que o que está registrado no z-buffer
+                    z_buffer_d[(int)floor(top[1])+j][k] = P[2];
+                    z_buffer_cor[(int)floor(top[1])+j][k] = 1;
+                }
             }
         }
     }
@@ -370,4 +411,80 @@ void mudanca_base_scc(float vec[], float ret[])
     ret[0] = U[0]*(vec[0] - C[0]) + U[1]*(vec[1] - C[1]) + U[2]*(vec[2] - C[2]);
     ret[1] = V[0]*(vec[0] - C[0]) + V[1]*(vec[1] - C[1]) + V[2]*(vec[2] - C[2]);
     ret[2] = N[0]*(vec[0] - C[0]) + N[1]*(vec[1] - C[1]) + N[2]*(vec[2] - C[2]);
+}
+
+void coordenadas_baricentricas(int* ponto, float** triangulo, float* coordenadas) {
+    float** sistema = (float**)malloc(3*sizeof(float*));
+    
+    int i;
+    for (i = 0; i < 2; i++) {
+        sistema[i] = (float*)malloc(4*sizeof(float));
+
+        int j;
+        for (j = 0; j < 3; j++) {
+            sistema[i][j] = triangulo[j][i];
+        }
+        sistema[i][j] = ponto[i];
+    }
+
+    for (i = 0; i < 4; i++) {
+        sistema[2][i] = 1;
+    }
+
+    // resolver sistema de equações lineares
+    resolver_sistema(sistema, 3, 4, coordenadas);
+}
+
+void resolver_sistema(float** matriz, int n, int m, float* resultado) {
+    escalonar(matriz, n, m);
+    
+    int i;
+    for (i = n-1; i >= 0; i--) {
+        resultado[i] = matriz[i][m-1];
+
+        int j;
+        for (j = i+1; j < n; j++) {
+            resultado[i] -= matriz[i][j]*resultado[j];
+        }
+    }
+}
+
+void escalonar(float** matriz, int n, int m) {
+    int h = 0; // Inicialização da linha pivô
+    int k = 0; // Inicialização da coluna pivô
+
+    while (h < m && k < n) {
+        // i_max := argmax(i = h...m, |A(i, k)|)
+        int max_i = 0;
+        int i;
+        for (i = h; i < m; i++) {
+            if (fabs(matriz[i][k]) > fabs(matriz[max_i][k])) {
+                max_i = i;
+            }
+        }
+        
+        if (matriz[max_i][k] == 0) {
+            // Não há pivô nessa coluna, passa para a próxima
+            k++;
+        } else {
+            // swap rows(h, i_max)
+            float* tmp = matriz[h];
+            matriz[h] = matriz[max_i];
+            matriz[max_i] = tmp;
+
+            for (i = h+1; i < m; i++) {
+                float f = matriz[i][k]/matriz[h][k];
+
+                matriz[i][k] = 0;
+
+                int j;
+                for (j = k+1; j < n; j++) {
+                    matriz[i][j] = matriz[i][j] - matriz[h][j]*f;
+                }
+            }
+
+            h++;
+            k++;
+        }
+    }
 }
