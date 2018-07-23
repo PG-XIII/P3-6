@@ -15,6 +15,8 @@ void proj_vetores(float vec1[], float vec2[], float ret[]);
 void mul_escalar(float vec[], float k, float ret[]);
 void sub_vet(float vec1[], float vec2[], float ret[]);
 void sum_vet(float vec1[], float vec2[], float ret[]);
+void projetar_triangulo(int *triangulo, float **projecao);
+void scanline(float **projecao, int** ret);
 
 void carregar_camera();
 void carregar_iluminacao();
@@ -50,6 +52,14 @@ float** pontos;
 int** triangulos;
 float** normais_vertices;
 float** normais_triangulos;
+
+// Variáveis do z-buffer
+int** ds;
+int** cores;
+
+// Variáveis da interface gráfica
+int width = 640;
+int height = 320;
 
 int main(int argc, char **argv)
 {
@@ -193,6 +203,113 @@ void carregar_iluminacao()
     fscanf(fp," %f", &n);
 
     fclose (fp);
+}
+
+void projetar_triangulo(int *triangulo, float **projecao) {
+    int i;
+    for (i = 0; i < 3; i++) {
+        float* p = pontos[triangulo[i]];
+        float pbarra[3]; // Ponto em coordenadas de câmera
+
+        mudanca_base_scc(p, pbarra);
+
+        projecao[i][0] = ((pbarra[0] * d / pbarra[2] / hx) + 1)*width/2; // Esse valor precisa apenas ser multiplicado pela [largura/altura] da tela em que será apresentado e arredondado
+        projecao[i][1] = (1 - (pbarra[1] * d / pbarra[2] / hy))*height/2;
+    }
+}
+
+void scanline(float** projecao, int** ret) {
+    float* top = projecao[0];
+    float* middle = projecao[1];
+    float* bottom = projecao[2];
+
+    // Calcular o primeiro pedaço dos xmin e xmax
+    float a = (bottom[1]-top[1])/(bottom[0]-top[0]);
+    float b = (middle[1]-top[1])/(middle[0]-top[0]);
+    int i, j;
+    for (i = floor(top[1]), j = 0; i < floor(middle[1]); i++, j++) {
+        int x1 = floor(top[0] + j/a);
+        int x2 = floor(top[0] + j/b);
+
+        if (x1 > x2) {
+            int tmp = x1;
+            x1 = x2;
+            x2 = tmp;
+        }
+
+        ret[j][0] = x1;
+        ret[j][1] = x2;
+    }
+
+    // Calcular o segundo pedaço
+    b = (bottom[1]-middle[1])/(bottom[0]-middle[0]);
+    for (; i < bottom[1]; i++, j++) {
+        int x1 = floor(top[0] + j/a);
+        int x2 = floor(middle[0] + (j-i)/b);
+
+        if (x1 > x2) {
+            int tmp = x1;
+            x1 = x2;
+            x2 = tmp;
+        }
+
+        ret[j][0] = x1;
+        ret[j][1] = x2;
+    }
+}
+
+/* Funções do z-buffer */
+
+void preencher_z_buffer() {
+    int i;
+    for (i = 0; i < num_triangulos; i++) {
+        float **projecao = (float**)malloc(3*sizeof(float*));
+        int i;
+        for (i = 0; i < 3; i++) {
+            projecao[i] = (float*)malloc(2*sizeof(float));
+        }
+        projetar_triangulo(triangulos[i], projecao);
+        
+        // Ordenar os pontos pela coordenada y
+        float max = -999999999;
+        int max_i = 0;
+        float min = 999999999;
+        int min_i = 0;
+        for (i = 0; i < 3; i++) {
+            if (projecao[i][1] > max) {
+                max_i = i;
+                max = projecao[i][1];
+            } 
+       
+            if (projecao[i][1] < min) {
+                min_i = i;
+                min = projecao[i][1];
+            }
+        }
+
+        float* top = projecao[max_i];
+        float* bottom = projecao[min_i];
+        float* middle = projecao[0 + 1 + 2 - max_i - min_i];
+
+        projecao[0] = top;
+        projecao[1] = middle;
+        projecao[2] = bottom;
+
+        int n_linhas = floor(max) - floor(min);
+        int **xminmax = (int**)malloc(n_linhas * sizeof(int*));
+        for (i = 0; i < n_linhas; i++) {
+            xminmax[i] = (int*)malloc(2*sizeof(int));
+        }
+
+        scanline(projecao, xminmax);
+
+        int j;
+        for (i = 0; i < n_linhas; i++) {
+            for (j = xminmax[i][0]; j < xminmax[i][1]; j++) {
+                
+            }
+        }
+    }
 }
 
 /* Funções Algébricas */
