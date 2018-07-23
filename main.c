@@ -63,14 +63,29 @@ int height = 320;
 
 int main(int argc, char **argv)
 {
-    carregar_objetos();
-    normalizar_triangulos();
-    normalizar_vertices();
-    int i;
-    for(i = 0; i < num_triangulos; i++)
-    {
-        printf("%f %f %f\n", normais_vertices[i][0], normais_vertices[i][1], normais_vertices[i][2]);
-    }
+    glutInit(&argc,argv);
+    glutInitDisplayMode(GLUT_RGB);
+    glutInitWindowSize(500,500);
+    glutInitWindowPosition(100,100);
+    glutCreateWindow("PG-13");
+    glClearColor(0.0,0.0,0.0,0.0);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glLoadIdentity();
+    gluOrtho2D( 0.0, 500.0, 500.0,0.0 );
+
+    glBegin(GL_POINTS);
+        glColor3f(1,1,1);
+        int i,j;
+        for(i=0; i < 250; i++)
+        {
+            for(j=0; j < 250; j++)
+            {
+                glVertex2i(i,j);
+            }
+        }
+    glEnd();
+    glFlush();
+    glutMainLoop();
     
     return 0;
 }
