@@ -94,6 +94,8 @@ int main(int argc, char **argv)
     normalizar_triangulos();
     printf("OK\nNormalizando vertices...");
     normalizar_vertices();
+    printf("OK\nEncontrando pontos em coordenadas de tela...");
+    projetar_pontos();
     printf("OK\nInicializando o z-buffer...");
     init_z_buffer();
     printf("OK\nPreenchendo o z-buffer...\n");
@@ -276,8 +278,8 @@ void projetar_pontos() {
     int i;
     for (i = 0; i < num_pontos; i++) {
         pontos_projetados[i] = (int*) calloc(2, sizeof(int));
-        pontos_projetados[i][0] = (int)((pontos[i][0] * d / pontos[i][2] / hx) + 1)*width/2; // Esse valor precisa apenas ser multiplicado pela [largura/altura] da tela em que será apresentado e arredondado
-        pontos_projetados[i][1] = (int)(1 - (pontos[i][1] * d / pontos[i][2] / hy))*height/2;
+        pontos_projetados[i][0] = (int)(((pontos[i][0] * d / pontos[i][2] / hx) + 1)*width/2); // Esse valor precisa apenas ser multiplicado pela [largura/altura] da tela em que será apresentado e arredondado
+        pontos_projetados[i][1] = (int)((1 - (pontos[i][1] * d / pontos[i][2] / hy))*height/2);
     }
 }
 
@@ -360,7 +362,6 @@ void preencher_z_buffer() {
                 min = pontos_projetados[triangulos[i][j]-1][1];
             }
         }
-
         float* top = pontos_projetados[triangulos[i][max_i]-1];
         float* bottom = pontos_projetados[triangulos[i][min_i]-1];
         float* middle = pontos_projetados[triangulos[i][0 + 1 + 2 - max_i - min_i]-1];
