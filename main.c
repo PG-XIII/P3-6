@@ -29,12 +29,12 @@ void carregar_camera();
 void carregar_iluminacao();
 void carregar_objetos();
 void normalizar_triangulos();
+void coord_mundo_para_scc();
 void normalizar_vertices();
 void init_z_buffer();
 void preencher_z_buffer();
 void scanline(float **projecao, int** ret);
 
-void mudanca_base_scc(float vec[], float ret[]);
 
 //variaveis da camera
 float C[3];
@@ -62,6 +62,7 @@ float** pontos;
 int** triangulos;
 float** normais_vertices;
 float** normais_triangulos;
+int** pontos_projetados;
 
 // Variáveis do z-buffer
 float** z_buffer_d;
@@ -87,6 +88,8 @@ int main(int argc, char **argv)
     carregar_camera();
     printf("OK\nCarregando objetos...");
     carregar_objetos();
+    printf("OK\nMudando as coordenadas de mundo para coordenadas de câmera...");
+    coord_mundo_para_scc();
     printf("OK\nNormalizando triangulos...");
     normalizar_triangulos();
     printf("OK\nNormalizando vertices...");
@@ -158,6 +161,53 @@ void carregar_objetos()
     fclose (fp);
 }
 
+void carregar_camera()
+{
+    FILE *fp;
+    fp = fopen("camera.cfg","r");
+    if (fp == NULL) {
+        printf ("File not created okay, errno = %d\n", errno);
+    }
+    fscanf(fp," %f %f %f", &C[0], &C[1], &C[2]);
+    fscanf(fp," %f %f %f", &N[0], &N[1], &N[2]);
+    fscanf(fp," %f %f %f", &V[0], &V[1], &V[2]);
+    fscanf(fp," %f %f %f", &d, &hx, &hy);
+
+    fclose (fp);
+
+    //Ortogonalizar V
+    float aux1[3];
+    float aux2[3];
+    normalizar(N,N);
+    proj_vetores(V, N, aux1);
+    sub_vet(V, aux1, aux2);
+    V[0] = aux2[0];
+    V[1] = aux2[1];
+    V[2] = aux2[2];
+    normalizar(V,V);
+    //Encontrar U
+    prod_vetorial(V, N, U);
+}
+
+void carregar_iluminacao()
+{
+    FILE *fp;
+    fp = fopen("iluminacao.txt","r");
+    if (fp == NULL) {
+        printf ("File not created okay, errno = %d\n", errno);
+    }
+    fscanf(fp," %f %f %f", &Pl[0], &Pl[1], &Pl[2]);
+    fscanf(fp," %f", &ka);
+    fscanf(fp," %f %f %f", &Ia[0], &Ia[1], &Ia[2]);
+    fscanf(fp," %f", &kd);
+    fscanf(fp," %f %f %f", &Od[0], &Od[1], &Od[2]);
+    fscanf(fp," %f", &ks);
+    fscanf(fp," %f %f %f", &Il[0], &Il[1], &Il[2]);
+    fscanf(fp," %f", &n);
+
+    fclose (fp);
+}
+
 void normalizar_triangulos()
 {
     int i;
@@ -209,63 +259,25 @@ void normalizar_vertices()
     }
 }
 
-void carregar_camera()
+void coord_mundo_para_scc()
 {
-    FILE *fp;
-    fp = fopen("camera.cfg","r");
-    if (fp == NULL) {
-        printf ("File not created okay, errno = %d\n", errno);
-    }
-    fscanf(fp," %f %f %f", &C[0], &C[1], &C[2]);
-    fscanf(fp," %f %f %f", &N[0], &N[1], &N[2]);
-    fscanf(fp," %f %f %f", &V[0], &V[1], &V[2]);
-    fscanf(fp," %f %f %f", &d, &hx, &hy);
-
-    fclose (fp);
-
-    //Ortogonalizar V
-    float aux1[3];
-    float aux2[3];
-    normalizar(N,N);
-    proj_vetores(V, N, aux1);
-    sub_vet(V, aux1, aux2);
-    V[0] = aux2[0];
-    V[1] = aux2[1];
-    V[2] = aux2[2];
-    normalizar(V,V);
-    //Encontrar U
-    prod_vetorial(V, N, U);
-}
-
-void carregar_iluminacao()
-{
-    FILE *fp;
-    fp = fopen("iluminacao.txt","r");
-    if (fp == NULL) {
-        printf ("File not created okay, errno = %d\n", errno);
-    }
-    fscanf(fp," %f %f %f", &Pl[0], &Pl[1], &Pl[2]);
-    fscanf(fp," %f", &ka);
-    fscanf(fp," %f %f %f", &Ia[0], &Ia[1], &Ia[2]);
-    fscanf(fp," %f", &kd);
-    fscanf(fp," %f %f %f", &Od[0], &Od[1], &Od[2]);
-    fscanf(fp," %f", &ks);
-    fscanf(fp," %f %f %f", &Il[0], &Il[1], &Il[2]);
-    fscanf(fp," %f", &n);
-
-    fclose (fp);
-}
-
-void projetar_triangulo(int *triangulo, float **projecao) {
     int i;
-    for (i = 0; i < 3; i++) {
-        float* p = pontos[triangulo[i]-1];
-        float pbarra[3]; // Ponto em coordenadas de câmera
+    for(i = 0; i < num_pontos; i++)
+    {
+        pontos[i][0] = U[0]*(pontos[i][0] - C[0]) + U[1]*(pontos[i][1] - C[1]) + U[2]*(pontos[i][2] - C[2]);
+        pontos[i][1] = V[0]*(pontos[i][0] - C[0]) + V[1]*(pontos[i][1] - C[1]) + V[2]*(pontos[i][2] - C[2]);
+        pontos[i][2] = N[0]*(pontos[i][0] - C[0]) + N[1]*(pontos[i][1] - C[1]) + N[2]*(pontos[i][2] - C[2]);
+    }
+    
+}
 
-        mudanca_base_scc(p, pbarra);
-
-        projecao[i][0] = ((pbarra[0] * d / pbarra[2] / hx) + 1)*width/2; // Esse valor precisa apenas ser multiplicado pela [largura/altura] da tela em que será apresentado e arredondado
-        projecao[i][1] = (1 - (pbarra[1] * d / pbarra[2] / hy))*height/2;
+void projetar_pontos() {
+    pontos_projetados = (int**) calloc(num_pontos, sizeof(int));
+    int i;
+    for (i = 0; i < num_pontos; i++) {
+        pontos_projetados[i] = (int*) calloc(2, sizeof(int));
+        pontos_projetados[i][0] = (int)((pontos[i][0] * d / pontos[i][2] / hx) + 1)*width/2; // Esse valor precisa apenas ser multiplicado pela [largura/altura] da tela em que será apresentado e arredondado
+        pontos_projetados[i][1] = (int)(1 - (pontos[i][1] * d / pontos[i][2] / hy))*height/2;
     }
 }
 
@@ -329,37 +341,29 @@ void init_z_buffer() {
 }
 
 void preencher_z_buffer() {
-    int i;
+    int i,j;
+    float* projecao[3];
     for (i = 0; i < num_triangulos; i++) {
-        float **projecao = (float**)malloc(3*sizeof(float*));
-        int j;
-        for (j = 0; j < 3; j++) {
-            projecao[j] = (float*)malloc(2*sizeof(float));
-        }
-        printf("\tProjetando triangulo no plano...");
-        projetar_triangulo(triangulos[i], projecao);
-        printf("OK\n\tOrdenando pontos pela coordenada y...");
-        
         // Ordenar os pontos pela coordenada y
         float max = -INFINITY;
         int max_i = 0;
         float min = INFINITY;
         int min_i = 0;
         for (j = 0; j < 3; j++) {
-            if (projecao[j][1] > max) {
+            if (pontos_projetados[triangulos[i][j]-1][1] > max) {
                 max_i = j;
-                max = projecao[j][1];
+                max = pontos_projetados[triangulos[i][j]-1][1];
             } 
        
-            if (projecao[j][1] < min) {
+            if (pontos_projetados[triangulos[i][j]-1][1] < min) {
                 min_i = j;
-                min = projecao[j][1];
+                min = pontos_projetados[triangulos[i][j]-1][1];
             }
         }
 
-        float* top = projecao[max_i];
-        float* bottom = projecao[min_i];
-        float* middle = projecao[0 + 1 + 2 - max_i - min_i];
+        float* top = pontos_projetados[triangulos[i][max_i]-1];
+        float* bottom = pontos_projetados[triangulos[i][min_i]-1];
+        float* middle = pontos_projetados[triangulos[i][0 + 1 + 2 - max_i - min_i]-1];
 
         projecao[0] = top;
         projecao[1] = middle;
@@ -458,13 +462,6 @@ void sum_vet(float vec1[], float vec2[], float ret[])
     ret[0] = vec1[0] + vec2[0];
     ret[1] = vec1[1] + vec2[1];
     ret[2] = vec1[2] + vec2[2];
-}
-
-void mudanca_base_scc(float vec[], float ret[])
-{
-    ret[0] = U[0]*(vec[0] - C[0]) + U[1]*(vec[1] - C[1]) + U[2]*(vec[2] - C[2]);
-    ret[1] = V[0]*(vec[0] - C[0]) + V[1]*(vec[1] - C[1]) + V[2]*(vec[2] - C[2]);
-    ret[2] = N[0]*(vec[0] - C[0]) + N[1]*(vec[1] - C[1]) + N[2]*(vec[2] - C[2]);
 }
 
 void coordenadas_baricentricas(int* ponto, float** triangulo, float* coordenadas) {
