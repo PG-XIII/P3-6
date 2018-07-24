@@ -2,12 +2,8 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <math.h>
-#ifdef __APPLE__
-    // Essa é a versão da glut pra macOS
-    #include <GLUT/glut.h>
-#else
-    #include <GL/glut.h>
-#endif
+#include <GL/glut.h>
+//#include <GLUT/glut.h> // Essa é a versão do glut.h no mac
 #include <errno.h>
 
 //rotinas auxiliares
@@ -24,7 +20,6 @@ void coordenadas_baricentricas(int* ponto, float** triangulo, float* coordenadas
 void resolver_sistema(float** matriz, int n, int m, float* resultado);
 void escalonar(float** matriz, int n, int m);
 
-void draw();
 void carregar_camera();
 void carregar_iluminacao();
 void carregar_objetos();
@@ -84,25 +79,26 @@ int main(int argc, char **argv)
     glLoadIdentity();
     gluOrtho2D(0.0, width, height, 0.0);
 
-    printf("Carregando camera...");
     carregar_camera();
-    printf("OK\nCarregando objetos...");
     carregar_objetos();
+<<<<<<< HEAD
     printf("OK\nMudando as coordenadas de mundo para coordenadas de câmera...");
     coord_mundo_para_scc();
     printf("OK\nNormalizando triangulos...");
+=======
+>>>>>>> parent of 7788e81... Fixed includes to work cross OS, added prints to show the progress, useful for debugging, fixed minor mistakes
     normalizar_triangulos();
-    printf("OK\nNormalizando vertices...");
     normalizar_vertices();
+<<<<<<< HEAD
     printf("OK\nEncontrando pontos em coordenadas de tela...");
     projetar_pontos();
     printf("OK\nInicializando o z-buffer...");
+=======
+>>>>>>> parent of 7788e81... Fixed includes to work cross OS, added prints to show the progress, useful for debugging, fixed minor mistakes
     init_z_buffer();
-    printf("OK\nPreenchendo o z-buffer...\n");
     preencher_z_buffer();
-    printf("                         OK\n");
 
-    /*glBegin(GL_POINTS);
+    glBegin(GL_POINTS);
         glColor3f(1,1,1);
         int i,j;
         for(i=0; i < height; i++)
@@ -115,24 +111,11 @@ int main(int argc, char **argv)
                 }
             }
         }
-    glEnd();*/
+    glEnd();
     glFlush();
-    glutDisplayFunc(draw);
     glutMainLoop();
     
     return 0;
-}
-
-void draw() {
-    glColor3f(1, 1, 1);
-    int i, j;
-    for (i = 0; i < height; i++) {
-        for (j = 0; j < width; j++) {
-            if (z_buffer_d[i][j] < INFINITY) {
-                glVertex2i(j, i);
-            }
-        }
-    }
 }
 
 void carregar_objetos()
@@ -346,6 +329,16 @@ void preencher_z_buffer() {
     int i,j;
     float* projecao[3];
     for (i = 0; i < num_triangulos; i++) {
+<<<<<<< HEAD
+=======
+        float **projecao = (float**)malloc(3*sizeof(float*));
+        int j;
+        for (j = 0; j < 3; j++) {
+            projecao[j] = (float*)malloc(2*sizeof(float));
+        }
+        projetar_triangulo(triangulos[i], projecao);
+        
+>>>>>>> parent of 7788e81... Fixed includes to work cross OS, added prints to show the progress, useful for debugging, fixed minor mistakes
         // Ordenar os pontos pela coordenada y
         float max = -INFINITY;
         int max_i = 0;
@@ -370,8 +363,6 @@ void preencher_z_buffer() {
         projecao[1] = middle;
         projecao[2] = bottom;
 
-        printf("OK\n\tRealizando scanline...");
-
         int n_linhas = floor(max) - floor(min);
         int **xminmax = (int**)malloc(n_linhas * sizeof(int*));
         for (j = 0; j < n_linhas; j++) {
@@ -379,8 +370,6 @@ void preencher_z_buffer() {
         }
 
         scanline(projecao, xminmax);
-
-        printf("OK\n\tAcessando o z-buffer...");
 
         int k;
         for (j = 0; j < n_linhas; j++) {
@@ -394,8 +383,8 @@ void preencher_z_buffer() {
                 float aux1[3];
                 float aux2[3];
                 float aux3[3];
-                mul_escalar(pontos[triangulos[i][min_i]-1], coordenadas[0], aux1);
-                mul_escalar(pontos[triangulos[i][max_i]-1], coordenadas[2], aux2);
+                mul_escalar(pontos[triangulos[i][min_i]], coordenadas[0], aux1);
+                mul_escalar(pontos[triangulos[i][max_i]], coordenadas[2], aux2);
                 sum_vet(aux1, aux2, aux3);
                 mul_escalar(pontos[triangulos[i][3-min_i-max_i]], coordenadas[1], aux1);
                 sum_vet(aux3, aux1, P);
@@ -407,8 +396,6 @@ void preencher_z_buffer() {
                 }
             }
         }
-
-        printf("OK\n");
     }
 }
 
