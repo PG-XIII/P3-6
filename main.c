@@ -24,13 +24,13 @@ void coordenadas_baricentricas(int* ponto, float** triangulo, float* coordenadas
 void resolver_sistema(float** matriz, int n, int m, float* resultado);
 void escalonar(float** matriz, int n, int m);
 
-void draw();
 void carregar_camera();
 void carregar_iluminacao();
 void carregar_objetos();
 void normalizar_triangulos();
 void coord_mundo_para_scc();
 void normalizar_vertices();
+void projetar_pontos();
 void init_z_buffer();
 void preencher_z_buffer();
 void scanline(float **projecao, int** ret);
@@ -69,11 +69,29 @@ float** z_buffer_d;
 float** z_buffer_cor;
 
 // Resolucao da interface gráfica
-#define width 640
-#define height 320
+#define width 500
+#define height 500
 
 int main(int argc, char **argv)
 {
+    printf("Carregando camera...");
+    carregar_camera();
+    printf("OK\nCarregando objetos...");
+    carregar_objetos();
+    printf("OK\nMudando as coordenadas de mundo para coordenadas de câmera...");
+    coord_mundo_para_scc();
+    printf("OK\nEncontrando pontos em coordenadas de tela...");
+    projetar_pontos();
+    printf("OK\nNormalizando triangulos...");
+    normalizar_triangulos();
+    printf("OK\nNormalizando vertices...");
+    normalizar_vertices();
+    printf("OK\nInicializando o z-buffer...");
+    init_z_buffer();
+    printf("OK\nPreenchendo o z-buffer...\n");
+    //preencher_z_buffer();
+    printf("                         OK\n");
+
     glutInit(&argc,argv);
     glutInitDisplayMode(GLUT_RGB);
     glutInitWindowSize(width,height);
@@ -82,57 +100,28 @@ int main(int argc, char **argv)
     glClearColor(0.0,0.0,0.0,0.0);
     glClear(GL_COLOR_BUFFER_BIT);
     glLoadIdentity();
-    gluOrtho2D(0.0, width, height, 0.0);
+    gluOrtho2D(0.0, width, 0.0, height);
 
-    printf("Carregando camera...");
-    carregar_camera();
-    printf("OK\nCarregando objetos...");
-    carregar_objetos();
-    printf("OK\nMudando as coordenadas de mundo para coordenadas de câmera...");
-    coord_mundo_para_scc();
-    printf("OK\nNormalizando triangulos...");
-    normalizar_triangulos();
-    printf("OK\nNormalizando vertices...");
-    normalizar_vertices();
-    printf("OK\nEncontrando pontos em coordenadas de tela...");
-    projetar_pontos();
-    printf("OK\nInicializando o z-buffer...");
-    init_z_buffer();
-    printf("OK\nPreenchendo o z-buffer...\n");
-    preencher_z_buffer();
-    printf("                         OK\n");
-
-    /*glBegin(GL_POINTS);
+    glBegin(GL_POINTS);
         glColor3f(1,1,1);
-        int i,j;
-        for(i=0; i < height; i++)
+        int i;
+        for(i=0; i < num_pontos; i++)
         {
-            for(j=0; j < width; j++)
-            {
-                if(z_buffer_d[i][j] < INFINITY)
-                {
-                    glVertex2i(j,i);
-                }
-            }
+            glVertex2i(pontos_projetados[i][0], pontos_projetados[i][1]);
         }
-    glEnd();*/
+    glEnd();
     glFlush();
-    glutDisplayFunc(draw);
     glutMainLoop();
+
+    free(pontos);
+    free(triangulos);
+    free(normais_vertices);
+    free(normalizar_triangulos);
+    free(pontos_projetados);
+    free(z_buffer_d);
+    free(z_buffer_cor);
     
     return 0;
-}
-
-void draw() {
-    glColor3f(1, 1, 1);
-    int i, j;
-    for (i = 0; i < height; i++) {
-        for (j = 0; j < width; j++) {
-            if (z_buffer_d[i][j] < INFINITY) {
-                glVertex2i(j, i);
-            }
-        }
-    }
 }
 
 void carregar_objetos()
@@ -146,14 +135,14 @@ void carregar_objetos()
     fscanf(fp," %d %d", &num_pontos, &num_triangulos);
 
     int i;
-    pontos =  (float**) calloc(num_pontos, sizeof(float));
+    pontos =  (float**) calloc(num_pontos, sizeof(float*));
     for(i = 0; i < num_pontos; i++)
     {
         pontos[i] = (float*) calloc(3, sizeof(float));
         fscanf(fp," %f %f %f", &pontos[i][0], &pontos[i][1], &pontos[i][2]);
     }
 
-    triangulos = (int**) calloc(num_triangulos, sizeof(int));
+    triangulos = (int**) calloc(num_triangulos, sizeof(int*));
     for(i = 0; i < num_triangulos; i++)
     {
         triangulos[i] = (int*) calloc(3, sizeof(int));
@@ -178,17 +167,13 @@ void carregar_camera()
     fclose (fp);
 
     //Ortogonalizar V
-    float aux1[3];
-    float aux2[3];
+    float aux[3];
     normalizar(N,N);
-    proj_vetores(V, N, aux1);
-    sub_vet(V, aux1, aux2);
-    V[0] = aux2[0];
-    V[1] = aux2[1];
-    V[2] = aux2[2];
+    proj_vetores(V, N, aux);
+    sub_vet(V, aux, V);
     normalizar(V,V);
     //Encontrar U
-    prod_vetorial(V, N, U);
+    prod_vetorial(N, V, U);
 }
 
 void carregar_iluminacao()
@@ -217,7 +202,7 @@ void normalizar_triangulos()
     float aux2[3];
     float aux3[3];
     
-    normais_triangulos = (float**) calloc(num_triangulos, sizeof(float));
+    normais_triangulos = (float**) calloc(num_triangulos, sizeof(float*));
     for(i = 0; i < num_triangulos; i++)
     {
         sub_vet(pontos[triangulos[i][1]-1], pontos[triangulos[i][0]-1], aux1);
@@ -236,7 +221,7 @@ void normalizar_vertices()
     int i,j,k;
     float aux[3] = {0,0,0};
 
-    normais_vertices = (float**) calloc(num_pontos, sizeof(float));
+    normais_vertices = (float**) calloc(num_pontos, sizeof(float*));
     for(i = 0; i < num_pontos; i++)
     {
         for(j = 0; j < num_triangulos; j++)
@@ -264,22 +249,29 @@ void normalizar_vertices()
 void coord_mundo_para_scc()
 {
     int i;
+    float** aux = (float**) calloc(num_pontos, sizeof(float*));
     for(i = 0; i < num_pontos; i++)
     {
-        pontos[i][0] = U[0]*(pontos[i][0] - C[0]) + U[1]*(pontos[i][1] - C[1]) + U[2]*(pontos[i][2] - C[2]);
-        pontos[i][1] = V[0]*(pontos[i][0] - C[0]) + V[1]*(pontos[i][1] - C[1]) + V[2]*(pontos[i][2] - C[2]);
-        pontos[i][2] = N[0]*(pontos[i][0] - C[0]) + N[1]*(pontos[i][1] - C[1]) + N[2]*(pontos[i][2] - C[2]);
+        aux[i] = (float*) calloc(3, sizeof(float));
+        aux[i][0] = U[0]*(pontos[i][0] - C[0]) + U[1]*(pontos[i][1] - C[1]) + U[2]*(pontos[i][2] - C[2]);
+        aux[i][1] = V[0]*(pontos[i][0] - C[0]) + V[1]*(pontos[i][1] - C[1]) + V[2]*(pontos[i][2] - C[2]);
+        aux[i][2] = N[0]*(pontos[i][0] - C[0]) + N[1]*(pontos[i][1] - C[1]) + N[2]*(pontos[i][2] - C[2]);
+        pontos[i][0] = aux[i][0];
+        pontos[i][1] = aux[i][1];
+        pontos[i][2] = aux[i][2];
     }
     
+    free(aux); 
 }
 
 void projetar_pontos() {
-    pontos_projetados = (int**) calloc(num_pontos, sizeof(int));
+    pontos_projetados = (int**) calloc(num_pontos, sizeof(int*));
     int i;
     for (i = 0; i < num_pontos; i++) {
         pontos_projetados[i] = (int*) calloc(2, sizeof(int));
-        pontos_projetados[i][0] = (int)(((pontos[i][0] * d / pontos[i][2] / hx) + 1)*width/2); // Esse valor precisa apenas ser multiplicado pela [largura/altura] da tela em que será apresentado e arredondado
-        pontos_projetados[i][1] = (int)((1 - (pontos[i][1] * d / pontos[i][2] / hy))*height/2);
+        //Esse valor precisa apenas ser multiplicado pela [largura/altura] da tela em que será apresentado e arredondado
+        pontos_projetados[i][0] = (int)(((d/hx * pontos[i][0]/pontos[i][2]) + 1)*width/2);
+        pontos_projetados[i][1] = (int)((1 - (d/hy * pontos[i][1]/pontos[i][2]))*height/2);
     }
 }
 
