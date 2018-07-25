@@ -143,8 +143,9 @@ void draw() {
             }   
         }
     }
+    glColor3f(1, 1, 1);
     for (i = 0; i < num_pontos; i++) {
-        glVertex2i(pontos_projetados[i][1], pontos_projetados[i][0]);
+        glVertex2i(pontos_projetados[i][0], pontos_projetados[i][1]);
     }
     glEnd();
 }
@@ -537,9 +538,9 @@ void preencher_z_buffer() {
                 sum_vet(aux3, aux1, P);
                 printf("OK\n\t\tAtualizando o z-buffer...");
 
-                if (z_buffer_d[bottom[1]+j][k] > P[2]) {
+                if (z_buffer_d[k][bottom[1]+j] > P[2]) {
                     // O ponto calculado está mais próximo do que o que está registrado no z-buffer
-                    z_buffer_d[bottom[1]+j][k] = P[2];
+                    z_buffer_d[k][bottom[1]+j] = P[2];
 
                     // Mudar a cor salva
                     /// 1. Calcular V, L, N
@@ -563,8 +564,8 @@ void preencher_z_buffer() {
                     normalizar(N, N);
 
                     /// 2. Adicionar a cor ao z-buffer
-                    iluminar(V, N, L, z_buffer_cor[bottom[1]+j][k]);
-                    printf("\t\tCor do ponto: (R: %f, G: %f, B: %f)\n", z_buffer_cor[bottom[1]+j][k][0], z_buffer_cor[bottom[1]+j][k][1], z_buffer_cor[bottom[1]+j][k][2]);
+                    iluminar(V, N, L, z_buffer_cor[k][bottom[1]+j]);
+                    printf("\t\tCor do ponto: (R: %f, G: %f, B: %f)\n", z_buffer_cor[k][bottom[1]+j][0], z_buffer_cor[k][bottom[1]+j][1], z_buffer_cor[k][bottom[1]+j][2]);
                 }
                 printf("OK\n");
             }
