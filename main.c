@@ -81,6 +81,8 @@ int main(int argc, char **argv)
     carregar_camera();
     printf("OK\nCarregando objetos...");
     carregar_objetos();
+    printf("OK\nCarregar iluminação...");
+    carregar_iluminacao();
     printf("OK\nMudando as coordenadas de mundo para coordenadas de câmera...");
     coord_mundo_para_scc();
     printf("OK\nEncontrando pontos em coordenadas de tela...");
@@ -140,6 +142,9 @@ void draw() {
                 glVertex2i(i, j);
             }   
         }
+    }
+    for (i = 0; i < num_pontos; i++) {
+        glVertex2i(pontos_projetados[i][1], pontos_projetados[i][0]);
     }
     glEnd();
 }
@@ -226,7 +231,7 @@ void iluminar(float V[], float N[], float L[], float ret[]) {
         mul_escalar(N, -1, N);
     }
     float NL = prod_interno(N, L);
-    if(NL>0){
+    if(NL>=0){
         difusa[0] = Od[0]*kd*NL*Il[0];
         difusa[1] = Od[1]*kd*NL*Il[1];
         difusa[2] = Od[2]*kd*NL*Il[2];
@@ -241,9 +246,10 @@ void iluminar(float V[], float N[], float L[], float ret[]) {
             specular[2] = Il[2]*ks*pow(RV, n);
         }
     }
-    ret[0] = ambiental[0]+difusa[0]+specular[0];
-    ret[1] = ambiental[1]+difusa[1]+specular[1];
-    ret[2] = ambiental[2]+difusa[2]+specular[2];
+
+    ret[0] = (ambiental[0]+difusa[0]+specular[0])/255;
+    ret[1] = (ambiental[1]+difusa[1]+specular[1])/255;
+    ret[2] = (ambiental[2]+difusa[2]+specular[2])/255;
 }
 
 void normalizar_triangulos()
