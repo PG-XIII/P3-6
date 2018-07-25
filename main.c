@@ -28,6 +28,7 @@ void escalonar(float** matriz, int n, int m);
 void draw();
 void carregar_camera();
 void carregar_iluminacao();
+void iluminar(float V[], float N[], float L[], float ret[]);
 void carregar_objetos();
 void normalizar_triangulos();
 void coord_mundo_para_scc();
@@ -68,7 +69,7 @@ int** pontos_projetados;
 
 // Variáveis do z-buffer
 float** z_buffer_d;
-float** z_buffer_cor;
+float*** z_buffer_cor;
 
 // Resolucao da interface gráfica
 #define width 500
@@ -134,12 +135,11 @@ void draw() {
     int i, j;
     for (i = 0; i < height; i++) {
         for (j = 0; j < width; j++) {
-            printf("%f ", z_buffer_d[i][j]);
             if (z_buffer_d[i][j] < INFINITY) {
+                glColor3f(z_buffer_cor[i][j][0], z_buffer_cor[i][j][1], z_buffer_cor[i][j][2]);
                 glVertex2i(i, j);
             }   
         }
-        printf("\n");
     }
     glEnd();
 }
@@ -213,6 +213,40 @@ void carregar_iluminacao()
     fscanf(fp," %f", &n);
 
     fclose (fp);
+}
+
+void iluminar(float V[], float N[], float L[], float ret[]) {
+    float cor[3];
+    float difusa[3];
+    float ambiental[3];
+    float specular[3];
+    ambiental[0] = Ia[0]*ka;
+    ambiental[1] = Ia[1]*ka;
+    ambiental[2] = Ia[2]*ka;
+    if (prod_interno(V, N) < 0) {
+        mul_escalar(N, -1, N);
+    }
+    float NL = prod_interno(N, L);
+    if(NL>0){
+        difusa[0] = Od[0]*kd*NL*Il[0];
+        difusa[1] = Od[1]*kd*NL*Il[1];
+        difusa[2] = Od[2]*kd*NL*Il[2];
+        float R[3];
+        R[0] = 2*NL*N[0];
+        R[1] = 2*NL*N[1];
+        R[2] = 2*NL*N[2];
+        float RV = prod_interno(R, V);
+        if(RV>0){
+            specular[0] = Il[0]*ks*pow(RV, n);
+            specular[1] = Il[1]*ks*pow(RV, n);
+            specular[2] = Il[2]*ks*pow(RV, n);
+        }
+    }
+    cor[0] = ambiental[0]+difusa[0]+specular[0];
+    cor[1] = ambiental[1]+difusa[1]+specular[1];
+    cor[2] = ambiental[2]+difusa[2]+specular[2];
+
+    ret = cor;
 }
 
 void normalizar_triangulos()
@@ -383,17 +417,17 @@ void scanline(int** projecao, int** ret) {
 
 void init_z_buffer() {
     z_buffer_d = (float**)malloc(height*sizeof(float*));
-    z_buffer_cor = (float**)malloc(height*sizeof(float*));
+    z_buffer_cor = (float***)malloc(height*sizeof(float**));
 
     int i;
     for (i = 0; i < height; i++) {
         z_buffer_d[i] = (float*)malloc(width*sizeof(float));
-        z_buffer_cor[i] = (float*)malloc(width*sizeof(float));
+        z_buffer_cor[i] = (float**)malloc(width*sizeof(float*));
 
         int j;
         for (j = 0; j < width; j++) {
             z_buffer_d[i][j] = INFINITY;
-            z_buffer_cor[i][j] = 0;
+            z_buffer_cor[i][j] = (float*)malloc(3*sizeof(float));
         }
     }
 }
@@ -503,7 +537,31 @@ void preencher_z_buffer() {
                 if (z_buffer_d[bottom[1]+j][k] > P[2]) {
                     // O ponto calculado está mais próximo do que o que está registrado no z-buffer
                     z_buffer_d[bottom[1]+j][k] = P[2];
-                    z_buffer_cor[bottom[1]+j][k] = 1;
+
+                    // Mudar a cor salva
+                    /// 1. Calcular V, L, N
+                    float V[3];
+                    float L[3];
+                    float N[3];
+                    float aux1[3];
+                    float aux2[3];
+                    float aux3[3];
+        
+                    mul_escalar(normais_vertices[triangulo[min_i]-1], coordenadas[0], aux1);
+                    mul_escalar(normais_vertices[triangulo[max_i]-1], coordenadas[2], aux2);
+                    sum_vet(aux1, aux2, aux3);
+                    mul_escalar(normais_vertices[triangulo[3-min_i-max_i]-1], coordenadas[1], aux1);
+                    sum_vet(aux3, aux1, N);
+                    mul_escalar(P, -1, V);
+                    sub_vet(Pl, P, L);
+
+                    normalizar(V, V);
+                    normalizar(L, L);
+                    normalizar(N, N);
+
+                    /// 2. Adicionar a cor ao z-buffer
+                    iluminar(V, N, L, z_buffer_cor[bottom[1]+j][k]);
+                    printf("\t\tCor do ponto: (R: %f, G: %f, B: %f)\n", z_buffer_cor[bottom[1]+j][k][0], z_buffer_cor[bottom[1]+j][k][1], z_buffer_cor[bottom[1]+j][k][2]);
                 }
                 printf("OK\n");
             }
