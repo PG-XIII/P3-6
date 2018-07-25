@@ -105,7 +105,7 @@ int main(int argc, char **argv)
     glClearColor(0.0,0.0,0.0,0.0);
     glClear(GL_COLOR_BUFFER_BIT);
     glLoadIdentity();
-    gluOrtho2D(0.0, width, 0.0, height);
+    gluOrtho2D(0.0, width, height, 0.0);
 
 /*    glBegin(GL_POINTS);
         glColor3f(1,1,1);
@@ -420,6 +420,7 @@ void scanline(int** projecao, int** ret) {
 /* Funções do z-buffer */
 
 void init_z_buffer() {
+    printf("\n\tCriando um z-buffer de tamanho %ix%i\n\t\t", width, height);
     z_buffer_d = (float**)malloc(height*sizeof(float*));
     z_buffer_cor = (float***)malloc(height*sizeof(float**));
 
