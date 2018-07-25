@@ -119,6 +119,7 @@ int main(int argc, char **argv)
 }
 
 void draw() {
+    glBegin(GL_POINTS);
     glColor3f(1, 1, 1);
     int i, j;
     for (i = 0; i < height; i++) {
@@ -128,6 +129,7 @@ void draw() {
             }
         }
     }
+    glEnd();
 }
 
 void carregar_objetos()
