@@ -216,7 +216,6 @@ void carregar_iluminacao()
 }
 
 void iluminar(float V[], float N[], float L[], float ret[]) {
-    float cor[3];
     float difusa[3];
     float ambiental[3];
     float specular[3];
@@ -242,11 +241,9 @@ void iluminar(float V[], float N[], float L[], float ret[]) {
             specular[2] = Il[2]*ks*pow(RV, n);
         }
     }
-    cor[0] = ambiental[0]+difusa[0]+specular[0];
-    cor[1] = ambiental[1]+difusa[1]+specular[1];
-    cor[2] = ambiental[2]+difusa[2]+specular[2];
-
-    ret = cor;
+    ret[0] = ambiental[0]+difusa[0]+specular[0];
+    ret[1] = ambiental[1]+difusa[1]+specular[1];
+    ret[2] = ambiental[2]+difusa[2]+specular[2];
 }
 
 void normalizar_triangulos()
