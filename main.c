@@ -334,24 +334,24 @@ void projetar_pontos() {
 }
 
 void scanline(int** projecao, int** ret) {
-    printf("\t\tOrganizando os pontos...");
+    //printf("\t\tOrganizando os pontos...");
     int* top = projecao[2];
     int* middle = projecao[1];
     int* bottom = projecao[0];
-    printf("OK\n\t\tRealizando scanline do primeiro pedaço...");
+    //printf("OK\n\t\tRealizando scanline do primeiro pedaço...");
 
     // Calcular o primeiro pedaço dos xmin e xmax
     float a, b;
     int tb_inline = 0, tm_inline = 0;
     if (bottom[0]-top[0] != 0) {
         a = ((float)bottom[1]-top[1])/(bottom[0]-top[0]);
-        printf("\t\ta = %f\n", a);
+        //printf("\t\ta = %f\n", a);
     } else {
         tb_inline = 1;
     }
     if (middle[0]-top[0] != 0) {
         b = ((float)middle[1]-top[1])/(middle[0]-top[0]);
-        printf("\t\tb = %f\n", b);
+        //printf("\t\tb = %f\n", b);
     } else {
         tm_inline = 1;
     }
@@ -381,13 +381,13 @@ void scanline(int** projecao, int** ret) {
         ret[j][1] = x2;
     }
 
-    printf("OK\n\t\tRealizando scanline do segundo pedaço...");
+    //printf("OK\n\t\tRealizando scanline do segundo pedaço...");
 
     // Calcular o segundo pedaço
     int mb_inline = 0;
     if (bottom[0]-middle[0] != 0) {
         b = ((float)bottom[1]-middle[1])/(bottom[0]-middle[0]);
-        printf("\t\tb = %f\n", b);
+        //printf("\t\tb = %f\n", b);
     } else {
         mb_inline = 1;
     }
@@ -414,7 +414,7 @@ void scanline(int** projecao, int** ret) {
         ret[j][1] = x2;
     }
 
-    printf("OK\n");
+    //printf("OK\n");
 }
 
 /* Funções do z-buffer */
@@ -440,7 +440,7 @@ void preencher_z_buffer() {
     int i,j;
     int* projecao[3];
     for (i = 0; i < num_triangulos; i++) {
-        printf("\tPegando os pontos do triângulo...");
+        //printf("\tPegando os pontos do triângulo...");
         // Ordenar os pontos pela coordenada y
         float max = -INFINITY;
         int max_i = 0;
@@ -466,14 +466,14 @@ void preencher_z_buffer() {
         projecao[1] = middle;
         projecao[2] = bottom;
 
-        printf("OK\n\tRealizando o scanline...\n");
+        //printf("OK\n\tRealizando o scanline...\n");
         //printf("\t\tTriangulo:\n\t\t\t(%i, %i)\n\t\t\t(%i, %i)\n\t\t\t(%i, %i)\n", top[0], top[1], middle[0], middle[1], bottom[0], bottom[1]);
-        printf("%i %i\n", top[0], top[1]);
+        //printf("%i %i\n", top[0], top[1]);
         //sleep(5);
 
         int n_linhas = floor(max) - floor(min);
         int **xminmax;
-        printf("\t\tScanline em um triangulo com %i linhas\n", n_linhas);
+        //printf("\t\tScanline em um triangulo com %i linhas\n", n_linhas);
         if (n_linhas > 0) {
             xminmax = (int**)malloc(n_linhas * sizeof(int*));
             for (j = 0; j < n_linhas; j++) {
@@ -483,7 +483,7 @@ void preencher_z_buffer() {
             scanline(projecao, xminmax);
         } else {
             continue;
-            printf("\t\tCorrigindo e pulando o scanline\n");
+            //printf("\t\tCorrigindo e pulando o scanline\n");
             xminmax = (int**)malloc(sizeof(int*));
             xminmax[0] = (int*)malloc(2*sizeof(int));
             xminmax[0][0] = projecao[0][0];
@@ -502,12 +502,12 @@ void preencher_z_buffer() {
             n_linhas = 1;
         }
         
-        printf("\t\tResultado do Scanline:\n");
-        for (j = 0; j < n_linhas; j++) {
-            printf("\t\t\t[%i, %i]\n", xminmax[j][0], xminmax[j][1]);
-        }
+        //printf("\t\tResultado do Scanline:\n");
+        //for (j = 0; j < n_linhas; j++) {
+        //    printf("\t\t\t[%i, %i]\n", xminmax[j][0], xminmax[j][1]);
+        //}
 
-        printf("                        OK\n\tAcessando o z-buffer...\n");
+        //printf("                        OK\n\tAcessando o z-buffer...\n");
 
         int k;
         for (j = 0; j < n_linhas; j++) {
@@ -518,14 +518,14 @@ void preencher_z_buffer() {
                 if (k < 0 || k > width) {
                     continue;
                 }
-                printf("\t\tAcessando posição (%i, %i)\n", k, j+bottom[1]);
-                printf("\t\tEncontrando coordenadas baricêntricas...");
+                //printf("\t\tAcessando posição (%i, %i)\n", k, j+bottom[1]);
+                //printf("\t\tEncontrando coordenadas baricêntricas...");
                 int* ponto = (int*)malloc(2*sizeof(int));
                 ponto[0] = k; ponto[1] = bottom[1] + j;
                 float* coordenadas = (float*)malloc(3*sizeof(float));
                 coordenadas_baricentricas(ponto, projecao, coordenadas);
-                printf("OK [%f, %f, %f]\n\t\tAproximando o ponto no triangulo...", coordenadas[0], coordenadas[1], coordenadas[2]);
-                fflush(stdout);
+                //printf("OK [%f, %f, %f]\n\t\tAproximando o ponto no triangulo...", coordenadas[0], coordenadas[1], coordenadas[2]);
+                //fflush(stdout);
 
                 float P[3];
                 float aux1[3];
@@ -536,7 +536,7 @@ void preencher_z_buffer() {
                 sum_vet(aux1, aux2, aux3);
                 mul_escalar(pontos[triangulo[3-min_i-max_i]-1], coordenadas[1], aux1);
                 sum_vet(aux3, aux1, P);
-                printf("OK\n\t\tAtualizando o z-buffer...");
+                //printf("OK\n\t\tAtualizando o z-buffer...");
 
                 if (z_buffer_d[k][bottom[1]+j] > P[2]) {
                     // O ponto calculado está mais próximo do que o que está registrado no z-buffer
@@ -565,16 +565,16 @@ void preencher_z_buffer() {
 
                     /// 2. Adicionar a cor ao z-buffer
                     iluminar(V, N, L, z_buffer_cor[k][bottom[1]+j]);
-                    printf("\t\tCor do ponto: (R: %f, G: %f, B: %f)\n", z_buffer_cor[k][bottom[1]+j][0], z_buffer_cor[k][bottom[1]+j][1], z_buffer_cor[k][bottom[1]+j][2]);
+                    //printf("\t\tCor do ponto: (R: %f, G: %f, B: %f)\n", z_buffer_cor[k][bottom[1]+j][0], z_buffer_cor[k][bottom[1]+j][1], z_buffer_cor[k][bottom[1]+j][2]);
                 }
-                printf("OK\n");
+                //printf("OK\n");
             }
         }
 
-        printf("OK\n");
+        //printf("OK\n");
     }
 
-    printf("z-buffer preenchido.\n");
+    //printf("z-buffer preenchido.\n");
 }
 
 /* Funções Algébricas */
@@ -651,15 +651,15 @@ void coordenadas_baricentricas(int* ponto, float** triangulo, float* coordenadas
     }
 
     // resolver sistema de equações lineares
-    printf("\t\t\tResolvendo o sistema\n");
+    //printf("\t\t\tResolvendo o sistema\n");
     resolver_sistema(sistema, 3, 4, coordenadas);
 }
 
 void resolver_sistema(float** matriz, int n, int m, float* resultado) {
-    printf("\t\t\tEscalonando a matriz do sistema\n");
+    //printf("\t\t\tEscalonando a matriz do sistema\n");
     escalonar(matriz, n, m);
     
-    printf("\t\t\tIsolando as variáveis\n");
+    //printf("\t\t\tIsolando as variáveis\n");
     int i;
     for (i = n-1; i >= 0; i--) {
         resultado[i] = matriz[i][m-1];
@@ -675,7 +675,7 @@ void escalonar(float** matriz, int n, int m) {
     int h = 0; // Inicialização da linha pivô
     int k = 0; // Inicialização da coluna pivô
     
-    printf("\t\t\t\tFunção de escalonamento\n");
+    //printf("\t\t\t\tFunção de escalonamento\n");
     while (h < m && k < n) {
         // i_max := argmax(i = h...m, |A(i, k)|)
         int max_i = 0;
@@ -710,5 +710,5 @@ void escalonar(float** matriz, int n, int m) {
             k++;
         }
     }
-    printf("\t\t\tEscalonamento completo\n");
+    //printf("\t\t\tEscalonamento completo\n");
 }
