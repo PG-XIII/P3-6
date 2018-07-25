@@ -24,6 +24,7 @@ void coordenadas_baricentricas(int* ponto, float** triangulo, float* coordenadas
 void resolver_sistema(float** matriz, int n, int m, float* resultado);
 void escalonar(float** matriz, int n, int m);
 
+void draw();
 void carregar_camera();
 void carregar_iluminacao();
 void carregar_objetos();
@@ -102,15 +103,16 @@ int main(int argc, char **argv)
     glLoadIdentity();
     gluOrtho2D(0.0, width, 0.0, height);
 
-    glBegin(GL_POINTS);
+/*    glBegin(GL_POINTS);
         glColor3f(1,1,1);
         int i;
         for(i=0; i < num_pontos; i++)
         {
             glVertex2i(pontos_projetados[i][0], pontos_projetados[i][1]);
         }
-    glEnd();
+    glEnd();*/
     glFlush();
+    glutDisplayFunc(draw);
     glutMainLoop();
 
     free(pontos);
@@ -122,6 +124,17 @@ int main(int argc, char **argv)
     free(z_buffer_cor);
     
     return 0;
+}
+
+void draw() {
+    glBegin(GL_POINTS);
+    glColor3f(1, 1, 1);
+
+    int i;
+    for (i = 0; i < num_pontos; i++) {
+        glVertex2i(pontos_projetados[i][0], pontos_projetados[i][1]);
+    }
+    glEnd();
 }
 
 void carregar_objetos()
