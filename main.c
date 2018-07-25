@@ -34,7 +34,7 @@ void normalizar_vertices();
 void projetar_pontos();
 void init_z_buffer();
 void preencher_z_buffer();
-void scanline(float **projecao, int** ret);
+void scanline(int **projecao, int** ret);
 
 
 //variaveis da camera
@@ -90,7 +90,7 @@ int main(int argc, char **argv)
     printf("OK\nInicializando o z-buffer...");
     init_z_buffer();
     printf("OK\nPreenchendo o z-buffer...\n");
-    //preencher_z_buffer();
+    preencher_z_buffer();
     printf("                         OK\n");
 
     glutInit(&argc,argv);
@@ -130,9 +130,13 @@ void draw() {
     glBegin(GL_POINTS);
     glColor3f(1, 1, 1);
 
-    int i;
-    for (i = 0; i < num_pontos; i++) {
-        glVertex2i(pontos_projetados[i][0], pontos_projetados[i][1]);
+    int i, j;
+    for (i = 0; i < height; i++) {
+        for (j = 0; j < width; j++) {
+            if (z_buffer_d[i][j] < INFINITY) {
+                glVertex2i(pontos_projetados[i][0], pontos_projetados[i][1]);
+            }   
+        }
     }
     glEnd();
 }
@@ -288,18 +292,39 @@ void projetar_pontos() {
     }
 }
 
-void scanline(float** projecao, int** ret) {
-    float* top = projecao[0];
-    float* middle = projecao[1];
-    float* bottom = projecao[2];
+void scanline(int** projecao, int** ret) {
+    int* top = projecao[0];
+    int* middle = projecao[1];
+    int* bottom = projecao[2];
 
     // Calcular o primeiro pedaço dos xmin e xmax
-    float a = (bottom[1]-top[1])/(bottom[0]-top[0]);
-    float b = (middle[1]-top[1])/(middle[0]-top[0]);
+    int a, b, tb_inline = 0, tm_inline = 0;
+    if (bottom[0]-top[0] != 0) {
+        a = (bottom[1]-top[1])/(bottom[0]-top[0]);
+    } else {
+        tb_inline = 1;
+    }
+    if (middle[0]-top[0] != 0) {
+        b = (middle[1]-top[1])/(middle[0]-top[0]);
+    } else {
+        tm_inline = 1;
+    }
     int i, j;
+
     for (i = floor(top[1]), j = 0; i < floor(middle[1]); i++, j++) {
-        int x1 = floor(top[0] + j/a);
-        int x2 = floor(top[0] + j/b);
+        printf("%i\n", j);
+        int x1, x2;
+        if (!tb_inline) {
+            x1 = floor(top[0] + j/a);
+        } else {
+            x1 = top[0];
+        }
+        
+        if (!tm_inline) {
+            x2 = floor(top[0] + j/b);
+        } else {
+            x2 = top[0];
+        }
 
         if (x1 > x2) {
             int tmp = x1;
@@ -309,13 +334,28 @@ void scanline(float** projecao, int** ret) {
 
         ret[j][0] = x1;
         ret[j][1] = x2;
+        printf("%i x %i\n", x1, x2);
     }
 
     // Calcular o segundo pedaço
-    b = (bottom[1]-middle[1])/(bottom[0]-middle[0]);
+    int mb_inline = 0;
+    if (bottom[0]-middle[0] != 0) {
+        b = (bottom[1]-middle[1])/(bottom[0]-middle[0]);
+    } else {
+        mb_inline = 1;
+    }
     for (; i < bottom[1]; i++, j++) {
-        int x1 = floor(top[0] + j/a);
-        int x2 = floor(middle[0] + (j-i)/b);
+        int x1, x2;
+        if (!tb_inline) {
+            x1 = floor(top[0] + j/a);
+        } else {
+            x1 = top[0];
+        }
+        if (!mb_inline) {
+            x2 = floor(middle[0] + (j-i)/b);
+        } else {
+            x2 = middle[0];
+        }
 
         if (x1 > x2) {
             int tmp = x1;
@@ -325,6 +365,7 @@ void scanline(float** projecao, int** ret) {
 
         ret[j][0] = x1;
         ret[j][1] = x2;
+        printf("%i x %i\n", x1, x2);
     }
 }
 
@@ -349,33 +390,32 @@ void init_z_buffer() {
 
 void preencher_z_buffer() {
     int i,j;
-    float* projecao[3];
+    int* projecao[3];
     for (i = 0; i < num_triangulos; i++) {
         // Ordenar os pontos pela coordenada y
         float max = -INFINITY;
         int max_i = 0;
         float min = INFINITY;
         int min_i = 0;
+        int* triangulo = triangulos[i];
         for (j = 0; j < 3; j++) {
-            if (pontos_projetados[triangulos[i][j]-1][1] > max) {
+            if (pontos_projetados[triangulo[j]-1][1] > max) {
                 max_i = j;
-                max = pontos_projetados[triangulos[i][j]-1][1];
+                max = pontos_projetados[triangulo[j]-1][1];
             } 
        
-            if (pontos_projetados[triangulos[i][j]-1][1] < min) {
+            if (pontos_projetados[triangulo[j]-1][1] < min) {
                 min_i = j;
-                min = pontos_projetados[triangulos[i][j]-1][1];
+                min = pontos_projetados[triangulo[j]-1][1];
             }
         }
-        float* top = pontos_projetados[triangulos[i][max_i]-1];
-        float* bottom = pontos_projetados[triangulos[i][min_i]-1];
-        float* middle = pontos_projetados[triangulos[i][0 + 1 + 2 - max_i - min_i]-1];
+        int* top = pontos_projetados[triangulo[max_i]-1];
+        int* bottom = pontos_projetados[triangulo[min_i]-1];
+        int* middle = pontos_projetados[triangulo[0 + 1 + 2 - max_i - min_i]-1];
 
         projecao[0] = top;
         projecao[1] = middle;
         projecao[2] = bottom;
-
-        printf("OK\n\tRealizando scanline...");
 
         int n_linhas = floor(max) - floor(min);
         int **xminmax = (int**)malloc(n_linhas * sizeof(int*));
@@ -389,9 +429,17 @@ void preencher_z_buffer() {
 
         int k;
         for (j = 0; j < n_linhas; j++) {
+            if (j + top[1] < 0 || j + top[1] > height) {
+                continue;
+            }
+            printf("%i x %i", xminmax[j][0], xminmax[j][1]);
             for (k = xminmax[j][0]; k < xminmax[j][1]; k++) {
+                if (k < 0 || k > width) {
+                    continue;
+                }
                 int* ponto = (int*)malloc(2*sizeof(int));
                 ponto[0] = k; ponto[1] = floor(top[1]) + j;
+                printf("(%i, %i)\n", ponto[0], ponto[1]);
                 float* coordenadas = (float*)malloc(3*sizeof(float));
                 coordenadas_baricentricas(ponto, projecao, coordenadas);
 
