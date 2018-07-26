@@ -144,9 +144,9 @@ void draw() {
         }
     }
     glColor3f(1, 1, 1);
-    for (i = 0; i < num_pontos; i++) {
-        glVertex2i(pontos_projetados[i][0], pontos_projetados[i][1]);
-    }
+    //for (i = 0; i < num_pontos; i++) {
+    //    glVertex2i(pontos_projetados[i][0], pontos_projetados[i][1]);
+    //}
     glEnd();
 }
 
