@@ -138,7 +138,7 @@ int main(int argc, char **argv)
     free(pontos);
     free(triangulos);
     free(normais_vertices);
-    free(normalizar_triangulos);
+    free(normais_triangulos);
     free(pontos_projetados);
     free(z_buffer_d);
     free(z_buffer_cor);
@@ -564,10 +564,11 @@ void preencher_z_buffer() {
                 //printf("OK\n\t\tAtualizando o z-buffer...");
 
                 proj_Pplano(P,auxPlan);
+                sub_vet(P, auxPlan, auxPlan);
                 if (z_buffer_d[k][bottom[1]+j] > P[2]) {
                     //VERIFICAR SE ESTÁ ACIMA DO PLANO
-                    //if(round(auxPlan[0]) == round(Vplano[0]) && round(auxPlan[1]) == round(Vplano[1]) && round(auxPlan[2]) == round(Vplano[2]))
-                    //{
+                    if(round(auxPlan[0]) == round(Vplano[0]) && round(auxPlan[1]) == round(Vplano[1]) && round(auxPlan[2]) == round(Vplano[2]))
+                    {
                         // O ponto calculado está mais próximo do que o que está registrado no z-buffer
                         z_buffer_d[k][bottom[1]+j] = P[2];
 
@@ -595,7 +596,7 @@ void preencher_z_buffer() {
                         /// 2. Adicionar a cor ao z-buffer
                         iluminar(V, N, L, z_buffer_cor[k][bottom[1]+j]);
                         //printf("\t\tCor do ponto: (R: %f, G: %f, B: %f)\n", z_buffer_cor[k][bottom[1]+j][0], z_buffer_cor[k][bottom[1]+j][1], z_buffer_cor[k][bottom[1]+j][2]);
-                    //}
+                    }
                 }
                 //printf("OK\n");
             }
