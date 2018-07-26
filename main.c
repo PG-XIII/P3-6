@@ -31,6 +31,7 @@ void carregar_iluminacao();
 void iluminar(float V[], float N[], float L[], float ret[]);
 void carregar_objetos();
 void normalizar_triangulos();
+void coord_mundo_para_scc();
 void normalizar_vertices();
 void projetar_pontos();
 void init_z_buffer();
@@ -65,6 +66,7 @@ float** pontos;
 int** triangulos;
 float** normais_vertices;
 float** normais_triangulos;
+int** pontos_projetados;
 
 // Variáveis do z-buffer
 float** z_buffer_d;
@@ -114,7 +116,6 @@ int main(int argc, char **argv)
             glVertex2i(pontos_projetados[i][0], pontos_projetados[i][1]);
         }
     glEnd();*/
-    glFlush();
     glutDisplayFunc(draw);
     glutMainLoop();
 
@@ -147,6 +148,7 @@ void draw() {
     //    glVertex2i(pontos_projetados[i][0], pontos_projetados[i][1]);
     //}
     glEnd();
+    glFlush();
 }
 
 void carregar_objetos()
@@ -303,7 +305,7 @@ void normalizar_vertices()
     }
 }
 
-void carregar_camera()
+void coord_mundo_para_scc()
 {
     int i;
     float** aux = (float**) calloc(num_pontos, sizeof(float*));
@@ -317,9 +319,10 @@ void carregar_camera()
         pontos[i][1] = aux[i][1];
         pontos[i][2] = aux[i][2];
     }
-    
-    free(aux); 
+
+    free(aux);
 }
+
 
 void projetar_pontos() {
     pontos_projetados = (int**) calloc(num_pontos, sizeof(int*));
