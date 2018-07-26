@@ -14,6 +14,7 @@
 //rotinas auxiliares
 //funcoes que possuem ret como parametro usam ele como destino do resultado da funcao.
 float prod_interno(float vec1[], float vec2[]);
+float prod_interno_r2(float vec1[], float vec2[]);
 void normalizar(float vec[], float ret[]);
 void prod_vetorial(float vec1[], float vec2[], float ret[]);
 void proj_vetores(float vec1[], float vec2[], float ret[]);
@@ -615,6 +616,11 @@ float prod_interno(float vec1[], float vec2[])
     return (vec1[0]*vec2[0] + vec1[1]*vec2[1] + vec1[2]*vec2[2]);
 }
 
+float prod_interno_r2(float vec1[], float vec2[])
+{
+    return (vec1[0]*vec2[0] + vec1[1]*vec2[1]);
+}
+
 void normalizar(float vec[], float ret[])
 {
     float mod = sqrt(prod_interno(vec,vec));
@@ -684,13 +690,12 @@ void coordenadas_baricentricas(int* P, int** triangulo, float* coordenadas) {
     // alpha = area(PBC)/area(ABC)
     // beta = area(PAC)/area(ABC)
     // gama = area(PAB)/area(ABC)
-
-    float Pn[3];
-    float triangulon[3][3];
+       
+    float Pn[2];
+    float triangulon[3][2];
     
     Pn[0] = (float)P[0];
     Pn[1] = (float)P[1];
-    Pn[2] = 0;
 
     int i, j;
     for (i = 0; i < 3; i++) {
@@ -699,40 +704,56 @@ void coordenadas_baricentricas(int* P, int** triangulo, float* coordenadas) {
             //printf("%i ", triangulon[i][j]);
         }
         //printf("\n");
-        triangulon[i][2] = 0;
     }
 
+    
     float aux1[3];
     float aux2[3];
     float aux3[3];
 
+    sub_vet(triangulon[1], triangulon[0], aux1);
+    sub_vet(triangulon[2], triangulon[0], aux2);
+    sub_vet(Pn, triangulo[0], aux3);
+    float d00 = prod_interno_r2(aux1,aux1);
+    float d01 = prod_interno_r2(aux1, aux2);
+    float d11 = prod_interno_r2(aux2, aux2);
+    float d20 = prod_interno_r2(aux3, aux1);
+    float d21 = prod_interno_r2(aux3, aux2);
+    float denom = d00 * d11 - d01 * d01;
+    coordenadas[1] = (d11 * d20 - d01 * d21) / denom;
+    coordenadas[2] = (d00 * d21 - d01 * d20) / denom;
+    coordenadas[0] = 1.0f - coordenadas[1] - coordenadas[2];
+
+
+
+    /*
     sub_vet(triangulon[0], triangulon[1], aux1);
     sub_vet(triangulon[0], triangulon[2], aux2);
     prod_vetorial(aux1, aux2, aux3);
-    float areaABC = sqrt(prod_interno(aux3, aux3))/2;
+    float areaABC = sqrt(pow(aux3[0],2)+pow(aux3[1],2)+pow(aux3[2],2))/2;
     printf("%f\n", areaABC);
 
     sub_vet(Pn, triangulon[1], aux1); // PB
     sub_vet(P, triangulon[2], aux2); // PC
     prod_vetorial(aux1, aux2, aux3);
-    float areaPBC = sqrt(prod_interno(aux3, aux3))/2;
+    float areaPBC = sqrt(pow(aux3[0],2)+pow(aux3[1],2)+pow(aux3[2],2))/2;
     printf("%f\n", areaPBC);
 
     sub_vet(Pn, triangulon[0], aux1); // PA
     sub_vet(Pn, triangulon[2], aux2); // PC
     prod_vetorial(aux1, aux2, aux3);
-    float areaPAC = sqrt(prod_interno(aux3, aux3))/2;
+    float areaPAC = sqrt(pow(aux3[0],2)+pow(aux3[1],2)+pow(aux3[2],2))/2;
     printf("%f\n", areaPAC);
 
     sub_vet(Pn, triangulon[1], aux1); // PB
     sub_vet(Pn, triangulon[0], aux2); // PA
     prod_vetorial(aux1, aux2, aux3);
-    float areaPBA = sqrt(prod_interno(aux3, aux3))/2;
+    float areaPBA = sqrt(pow(aux3[0],2)+pow(aux3[1],2)+pow(aux3[2],2))/2;
     printf("%f\n", areaPBA);
 
     coordenadas[0] = areaPBC/areaABC;
     coordenadas[1] = areaPAC/areaABC;
-    coordenadas[2] = areaPBA/areaABC;
+    coordenadas[2] = areaPBA/areaABC;*/
 
 
     /*float** sistema = (float**)malloc(3*sizeof(float*));
