@@ -21,7 +21,7 @@ void mul_escalar(float vec[], float k, float ret[]);
 void sub_vet(float vec1[], float vec2[], float ret[]);
 void sum_vet(float vec1[], float vec2[], float ret[]);
 void projetar_triangulo(int *triangulo, float **projecao);
-void coordenadas_baricentricas(int* ponto, float** triangulo, float* coordenadas);
+void coordenadas_baricentricas(int* P, int** triangulo, float* coordenadas);
 void resolver_sistema(float** matriz, int n, int m, float* resultado);
 void escalonar(float** matriz, int n, int m);
 void proj_Pplano(float ponto[], float ret[]);
@@ -250,13 +250,14 @@ void iluminar(float V[], float N[], float L[], float ret[]) {
     }
     float NL = prod_interno(N, L);
     if(NL>=0){
-        difusa[0] = Od[0]*kd*NL*Il[0];
-        difusa[1] = Od[1]*kd*NL*Il[1];
-        difusa[2] = Od[2]*kd*NL*Il[2];
+        difusa[0] = kd*NL*Il[0]*Od[0];
+        difusa[1] = kd*NL*Il[1]*Od[1];
+        difusa[2] = kd*NL*Il[2]*Od[2];
         float R[3];
-        R[0] = 2*NL*N[0];
-        R[1] = 2*NL*N[1];
-        R[2] = 2*NL*N[2];
+        R[0] = 2*NL*N[0] - L[0];
+        R[1] = 2*NL*N[1] - L[1];
+        R[2] = 2*NL*N[2] - L[2];
+        normalizar(R, R);
         float RV = prod_interno(R, V);
         if(RV>0){
             specular[0] = Il[0]*ks*pow(RV, n);
@@ -265,9 +266,9 @@ void iluminar(float V[], float N[], float L[], float ret[]) {
         }
     }
 
-    ret[0] = (ambiental[0]+difusa[0]+specular[0])/255;
-    ret[1] = (ambiental[1]+difusa[1]+specular[1])/255;
-    ret[2] = (ambiental[2]+difusa[2]+specular[2])/255;
+    ret[0] = (ambiental[0]+difusa[0]+specular[0])/255; ret[0] = (ret[0] < 1) ? ret[0] : 1;
+    ret[1] = (ambiental[1]+difusa[1]+specular[1])/255; ret[1] = (ret[1] < 1) ? ret[1] : 1;
+    ret[2] = (ambiental[2]+difusa[2]+specular[2])/255; ret[2] = (ret[2] < 1) ? ret[2] : 1;
 }
 
 void normalizar_triangulos()
@@ -534,10 +535,19 @@ void preencher_z_buffer() {
         //printf("                        OK\n\tAcessando o z-buffer...\n");
 
         int k;
+        /*printf("Projecao:\n");
+        for (j = 0; j < 3; j++) {
+            for (k = 0; k < 2; k++) {
+                printf("%i ", projecao[j][k]);
+            }
+            printf("\n");
+        }
+        printf("---------\n");*/
         for (j = 0; j < n_linhas; j++) {
             if (j + bottom[1] < 0 || j + bottom[1] > height) {
                 continue;
             }
+            //printf("%i %i\n", xminmax[j][0], xminmax[j][1]);
             for (k = xminmax[j][0]; k <= xminmax[j][1]; k++) {
                 if (k < 0 || k > width) {
                     continue;
@@ -548,6 +558,7 @@ void preencher_z_buffer() {
                 ponto[0] = k; ponto[1] = bottom[1] + j;
                 float* coordenadas = (float*)malloc(3*sizeof(float));
                 coordenadas_baricentricas(ponto, projecao, coordenadas);
+                printf("(%i, %i) baricentricas: [%f, %f, %f]\n", k, bottom[1]+j, coordenadas[0], coordenadas[1], coordenadas[2]);
                 //printf("OK [%f, %f, %f]\n\t\tAproximando o ponto no triangulo...", coordenadas[0], coordenadas[1], coordenadas[2]);
                 //fflush(stdout);
 
@@ -556,11 +567,12 @@ void preencher_z_buffer() {
                 float aux2[3];
                 float aux3[3];
                 float auxPlan[3];
-                mul_escalar(pontos[triangulo[min_i]-1], coordenadas[0], aux1);
-                mul_escalar(pontos[triangulo[max_i]-1], coordenadas[2], aux2);
+                mul_escalar(pontos[triangulo[max_i]-1], coordenadas[0], aux1);
+                mul_escalar(pontos[triangulo[min_i]-1], coordenadas[2], aux2);
                 sum_vet(aux1, aux2, aux3);
                 mul_escalar(pontos[triangulo[3-min_i-max_i]-1], coordenadas[1], aux1);
                 sum_vet(aux3, aux1, P);
+                //printf("%f\n", P[2]);
                 //printf("OK\n\t\tAtualizando o z-buffer...");
 
                 proj_Pplano(P,auxPlan);
@@ -575,27 +587,27 @@ void preencher_z_buffer() {
 
                         // Mudar a cor salva
                         /// 1. Calcular V, L, N
-                        float V[3];
-                        float L[3];
-                        float N[3];
+                        float Vl[3];
+                        float Ll[3];
+                        float Nl[3];
                         float aux1[3];
                         float aux2[3];
                         float aux3[3];
             
-                        mul_escalar(normais_vertices[triangulo[min_i]-1], coordenadas[0], aux1);
-                        mul_escalar(normais_vertices[triangulo[max_i]-1], coordenadas[2], aux2);
+                        mul_escalar(normais_vertices[triangulo[max_i]-1], coordenadas[0], aux1);
+                        mul_escalar(normais_vertices[triangulo[min_i]-1], coordenadas[2], aux2);
                         sum_vet(aux1, aux2, aux3);
                         mul_escalar(normais_vertices[triangulo[3-min_i-max_i]-1], coordenadas[1], aux1);
-                        sum_vet(aux3, aux1, N);
-                        mul_escalar(P, -1, V);
-                        sub_vet(Pl, P, L);
+                        sum_vet(aux3, aux1, Nl);
+                        mul_escalar(P, -1, Vl);
+                        sub_vet(Pl, P, Ll);
 
-                        normalizar(V, V);
-                        normalizar(L, L);
-                        normalizar(N, N);
+                        normalizar(Vl, Vl);
+                        normalizar(Ll, Ll);
+                        normalizar(Nl, Nl);
 
                         /// 2. Adicionar a cor ao z-buffer
-                        iluminar(V, N, L, z_buffer_cor[k][bottom[1]+j]);
+                        iluminar(Vl, Nl, Ll, z_buffer_cor[k][bottom[1]+j]);
                         //printf("\t\tCor do ponto: (R: %f, G: %f, B: %f)\n", z_buffer_cor[k][bottom[1]+j][0], z_buffer_cor[k][bottom[1]+j][1], z_buffer_cor[k][bottom[1]+j][2]);
                     }
                 }
@@ -603,7 +615,7 @@ void preencher_z_buffer() {
             }
         }
 
-        //printf("OK\n");
+        //printf("\n");
     }
 
     //printf("z-buffer preenchido.\n");
@@ -683,8 +695,62 @@ void mudanca_base_scc(float vec[], float ret[])
     ret[2] = N[0]*(vec[0] - C[0]) + N[1]*(vec[1] - C[1]) + N[2]*(vec[2] - C[2]);
 }
 
-void coordenadas_baricentricas(int* ponto, float** triangulo, float* coordenadas) {
-    float** sistema = (float**)malloc(3*sizeof(float*));
+void coordenadas_baricentricas(int* P, int** triangulo, float* coordenadas) {
+    // alpha = area(PBC)/area(ABC)
+    // beta = area(PAC)/area(ABC)
+    // gama = area(PAB)/area(ABC)
+
+    float Pn[3];
+    float triangulon[3][3];
+    
+    Pn[0] = (float)P[0];
+    Pn[1] = (float)P[1];
+    Pn[2] = 0;
+
+    int i, j;
+    for (i = 0; i < 3; i++) {
+        for (j = 0; j < 2; j++) {  
+            triangulon[i][j] = (float)triangulo[i][j];
+            //printf("%i ", triangulon[i][j]);
+        }
+        //printf("\n");
+        triangulon[i][2] = 0;
+    }
+
+    float aux1[3];
+    float aux2[3];
+    float aux3[3];
+
+    sub_vet(triangulon[0], triangulon[1], aux1);
+    sub_vet(triangulon[0], triangulon[2], aux2);
+    prod_vetorial(aux1, aux2, aux3);
+    float areaABC = sqrt(prod_interno(aux3, aux3))/2;
+    printf("%f\n", areaABC);
+
+    sub_vet(Pn, triangulon[1], aux1); // PB
+    sub_vet(P, triangulon[2], aux2); // PC
+    prod_vetorial(aux1, aux2, aux3);
+    float areaPBC = sqrt(prod_interno(aux3, aux3))/2;
+    printf("%f\n", areaPBC);
+
+    sub_vet(Pn, triangulon[0], aux1); // PA
+    sub_vet(Pn, triangulon[2], aux2); // PC
+    prod_vetorial(aux1, aux2, aux3);
+    float areaPAC = sqrt(prod_interno(aux3, aux3))/2;
+    printf("%f\n", areaPAC);
+
+    sub_vet(Pn, triangulon[1], aux1); // PB
+    sub_vet(Pn, triangulon[0], aux2); // PA
+    prod_vetorial(aux1, aux2, aux3);
+    float areaPBA = sqrt(prod_interno(aux3, aux3))/2;
+    printf("%f\n", areaPBA);
+
+    coordenadas[0] = areaPBC/areaABC;
+    coordenadas[1] = areaPAC/areaABC;
+    coordenadas[2] = areaPBA/areaABC;
+
+
+    /*float** sistema = (float**)malloc(3*sizeof(float*));
     
     int i;
     for (i = 0; i < 2; i++) {
@@ -705,7 +771,7 @@ void coordenadas_baricentricas(int* ponto, float** triangulo, float* coordenadas
 
     // resolver sistema de equações lineares
     //printf("\t\t\tResolvendo o sistema\n");
-    resolver_sistema(sistema, 3, 4, coordenadas);
+    resolver_sistema(sistema, 3, 4, coordenadas);*/
 }
 
 void resolver_sistema(float** matriz, int n, int m, float* resultado) {
@@ -729,7 +795,8 @@ void escalonar(float** matriz, int n, int m) {
     int k = 0; // Inicialização da coluna pivô
     
     //printf("\t\t\t\tFunção de escalonamento\n");
-    while (h < m && k < n) {
+    while (h < n && k < m) {
+        printf("%i %i\n", h, k);
         // i_max := argmax(i = h...m, |A(i, k)|)
         int max_i = 0;
         int i;
@@ -761,6 +828,7 @@ void escalonar(float** matriz, int n, int m) {
 
             h++;
             k++;
+            printf("%i %i\n", h, k);
         }
     }
     //printf("\t\t\tEscalonamento completo\n");
