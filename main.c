@@ -24,6 +24,7 @@ void projetar_triangulo(int *triangulo, float **projecao);
 void coordenadas_baricentricas(int* ponto, float** triangulo, float* coordenadas);
 void resolver_sistema(float** matriz, int n, int m, float* resultado);
 void escalonar(float** matriz, int n, int m);
+void proj_Pplano(float ponto[], float ret[]);
 
 void draw();
 void carregar_camera();
@@ -565,7 +566,7 @@ void preencher_z_buffer() {
                 proj_Pplano(P,auxPlan);
                 if (z_buffer_d[k][bottom[1]+j] > P[2]) {
                     //VERIFICAR SE ESTÁ ACIMA DO PLANO
-                    //if(floor(auxPlan[0]) == floor(Vplano[0]) && floor(auxPlan[1]) == floor(Vplano[1]) && floor(auxPlan[2]) == floor(Vplano[2]))
+                    //if(round(auxPlan[0]) == round(Vplano[0]) && round(auxPlan[1]) == round(Vplano[1]) && round(auxPlan[2]) == round(Vplano[2]))
                     //{
                         // O ponto calculado está mais próximo do que o que está registrado no z-buffer
                         z_buffer_d[k][bottom[1]+j] = P[2];
