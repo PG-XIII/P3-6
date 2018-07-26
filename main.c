@@ -72,13 +72,28 @@ int** pontos_projetados;
 float** z_buffer_d;
 float*** z_buffer_cor;
 
+// Variaáveis do plano
+float a,b,c,de;
+float Pplano[3];
+float Vplano[3];
+
 // Resolucao da interface gráfica
 #define width 500
 #define height 500
 
 int main(int argc, char **argv)
 {
-    printf("Carregando camera...");
+    printf("Digite a função do plano...\n");
+
+    scanf(" %f %f %f %f", &a, &b, &c, &de);
+    Pplano[0] = -de/a;
+    Pplano[1] = 0;
+    Pplano[2] = 0;
+    Vplano[0] = a;
+    Vplano[1] = b;
+    Vplano[2] = c;
+
+    printf("\nCarregando camera...");
     carregar_camera();
     printf("OK\nCarregando objetos...");
     carregar_objetos();
@@ -320,6 +335,11 @@ void coord_mundo_para_scc()
         pontos[i][2] = aux[i][2];
     }
 
+    mudanca_base_scc(Vplano, Vplano);
+    normalizar(Vplano, Vplano);
+    mudanca_base_scc(Pplano, Pplano);
+    mudanca_base_scc(Pl, Pl);
+
     free(aux);
 }
 
@@ -534,6 +554,7 @@ void preencher_z_buffer() {
                 float aux1[3];
                 float aux2[3];
                 float aux3[3];
+                float auxPlan[3];
                 mul_escalar(pontos[triangulo[min_i]-1], coordenadas[0], aux1);
                 mul_escalar(pontos[triangulo[max_i]-1], coordenadas[2], aux2);
                 sum_vet(aux1, aux2, aux3);
@@ -541,34 +562,39 @@ void preencher_z_buffer() {
                 sum_vet(aux3, aux1, P);
                 //printf("OK\n\t\tAtualizando o z-buffer...");
 
+                proj_Pplano(P,auxPlan);
                 if (z_buffer_d[k][bottom[1]+j] > P[2]) {
-                    // O ponto calculado está mais próximo do que o que está registrado no z-buffer
-                    z_buffer_d[k][bottom[1]+j] = P[2];
+                    //VERIFICAR SE ESTÁ ACIMA DO PLANO
+                    //if(floor(auxPlan[0]) == floor(Vplano[0]) && floor(auxPlan[1]) == floor(Vplano[1]) && floor(auxPlan[2]) == floor(Vplano[2]))
+                    //{
+                        // O ponto calculado está mais próximo do que o que está registrado no z-buffer
+                        z_buffer_d[k][bottom[1]+j] = P[2];
 
-                    // Mudar a cor salva
-                    /// 1. Calcular V, L, N
-                    float V[3];
-                    float L[3];
-                    float N[3];
-                    float aux1[3];
-                    float aux2[3];
-                    float aux3[3];
-        
-                    mul_escalar(normais_vertices[triangulo[min_i]-1], coordenadas[0], aux1);
-                    mul_escalar(normais_vertices[triangulo[max_i]-1], coordenadas[2], aux2);
-                    sum_vet(aux1, aux2, aux3);
-                    mul_escalar(normais_vertices[triangulo[3-min_i-max_i]-1], coordenadas[1], aux1);
-                    sum_vet(aux3, aux1, N);
-                    mul_escalar(P, -1, V);
-                    sub_vet(Pl, P, L);
+                        // Mudar a cor salva
+                        /// 1. Calcular V, L, N
+                        float V[3];
+                        float L[3];
+                        float N[3];
+                        float aux1[3];
+                        float aux2[3];
+                        float aux3[3];
+            
+                        mul_escalar(normais_vertices[triangulo[min_i]-1], coordenadas[0], aux1);
+                        mul_escalar(normais_vertices[triangulo[max_i]-1], coordenadas[2], aux2);
+                        sum_vet(aux1, aux2, aux3);
+                        mul_escalar(normais_vertices[triangulo[3-min_i-max_i]-1], coordenadas[1], aux1);
+                        sum_vet(aux3, aux1, N);
+                        mul_escalar(P, -1, V);
+                        sub_vet(Pl, P, L);
 
-                    normalizar(V, V);
-                    normalizar(L, L);
-                    normalizar(N, N);
+                        normalizar(V, V);
+                        normalizar(L, L);
+                        normalizar(N, N);
 
-                    /// 2. Adicionar a cor ao z-buffer
-                    iluminar(V, N, L, z_buffer_cor[k][bottom[1]+j]);
-                    //printf("\t\tCor do ponto: (R: %f, G: %f, B: %f)\n", z_buffer_cor[k][bottom[1]+j][0], z_buffer_cor[k][bottom[1]+j][1], z_buffer_cor[k][bottom[1]+j][2]);
+                        /// 2. Adicionar a cor ao z-buffer
+                        iluminar(V, N, L, z_buffer_cor[k][bottom[1]+j]);
+                        //printf("\t\tCor do ponto: (R: %f, G: %f, B: %f)\n", z_buffer_cor[k][bottom[1]+j][0], z_buffer_cor[k][bottom[1]+j][1], z_buffer_cor[k][bottom[1]+j][2]);
+                    //}
                 }
                 //printf("OK\n");
             }
@@ -610,6 +636,20 @@ void proj_vetores(float vec1[], float vec2[], float ret[])
     ret[0] = prop * vec2[0];
     ret[1] = prop * vec2[1];
     ret[2] = prop * vec2[2];
+}
+
+void proj_Pplano(float ponto[], float ret[])
+{
+    float aux1[3];
+    float aux2[3];
+    float aux3[3];
+    sub_vet(ponto, Pplano, aux1);
+    mul_escalar(Vplano, prod_interno(Vplano, aux1), aux2);
+    sub_vet(ponto, aux2, aux3);
+    ret[0] = aux3[0];
+    ret[1] = aux3[1];
+    ret[2] = aux3[2];
+    normalizar(ret,ret);
 }
 
 void mul_escalar(float vec[], float k, float ret[])
