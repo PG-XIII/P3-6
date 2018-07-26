@@ -75,8 +75,6 @@ float*** z_buffer_cor;
 
 // Variaáveis do plano
 float a,b,c,de;
-float Pplano[3];
-float Vplano[3];
 
 // Resolucao da interface gráfica
 #define width 500
@@ -87,12 +85,6 @@ int main(int argc, char **argv)
     printf("Digite a função do plano...\n");
 
     scanf(" %f %f %f %f", &a, &b, &c, &de);
-    Pplano[0] = -de/a;
-    Pplano[1] = 0;
-    Pplano[2] = 0;
-    Vplano[0] = a;
-    Vplano[1] = b;
-    Vplano[2] = c;
 
     printf("\nCarregando camera...");
     carregar_camera();
@@ -337,9 +329,6 @@ void coord_mundo_para_scc()
         pontos[i][2] = aux[i][2];
     }
 
-    mudanca_base_scc(Vplano, Vplano);
-    normalizar(Vplano, Vplano);
-    mudanca_base_scc(Pplano, Pplano);
     mudanca_base_scc(Pl, Pl);
 
     free(aux);
@@ -574,14 +563,12 @@ void preencher_z_buffer() {
                 sum_vet(aux3, aux1, P);
                 //printf("%f\n", P[2]);
                 //printf("OK\n\t\tAtualizando o z-buffer...");
+                
+                float d_plano = a*P[0] + b*P[1] + c*P[2] + de;
 
-                proj_Pplano(P,auxPlan);
-                sub_vet(P, auxPlan, auxPlan);
-                normalizar(auxPlan, auxPlan);
                 if (z_buffer_d[k][bottom[1]+j] > P[2]) {
                     //VERIFICAR SE ESTÁ ACIMA DO PLANO
-                    if(round(auxPlan[0]) != round(Vplano[0]) || round(auxPlan[1]) != round(Vplano[1]) || round(auxPlan[2]) != round(Vplano[2]))
-                    {
+                    if (d_plano > 0) {
                         // O ponto calculado está mais próximo do que o que está registrado no z-buffer
                         z_buffer_d[k][bottom[1]+j] = P[2];
 
@@ -658,8 +645,6 @@ void proj_Pplano(float ponto[], float ret[])
     float aux1[3];
     float aux2[3];
     float aux3[3];
-    sub_vet(ponto, Pplano, aux1);
-    mul_escalar(Vplano, prod_interno(Vplano, aux1), aux2);
     sub_vet(ponto, aux2, aux3);
     ret[0] = aux3[0];
     ret[1] = aux3[1];
