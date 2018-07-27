@@ -434,7 +434,7 @@ void scanline(int** projecao, int** ret) {
 /* Funções do z-buffer */
 
 void init_z_buffer() {
-    printf("\n\tCriando um z-buffer de tamanho %ix%i\n\t\t", width, height);
+    //printf("\n\tCriando um z-buffer de tamanho %ix%i\n\t\t", width, height);
     z_buffer_d = (float**)malloc(height*sizeof(float*));
     z_buffer_cor = (float***)malloc(height*sizeof(float**));
 
@@ -565,11 +565,12 @@ void preencher_z_buffer() {
                 //printf("%f\n", P[2]);
                 //printf("OK\n\t\tAtualizando o z-buffer...");
                 
-                float d_plano = a*P[0] + b*P[1] + c*P[2] + de;
+                float d_plano = (a*P[0] + b*P[1] + c*P[2] + de);
 
                 if (z_buffer_d[k][bottom[1]+j] > P[2]) {
                     //VERIFICAR SE ESTÁ ACIMA DO PLANO
-                    if (d_plano > 0) {
+                    printf("Distância do Plano: %f\n", d_plano);
+                    if (d_plano <= 0) {
                         // O ponto calculado está mais próximo do que o que está registrado no z-buffer
                         z_buffer_d[k][bottom[1]+j] = P[2];
 
@@ -713,7 +714,7 @@ void coordenadas_baricentricas(int* P, int** triangulo, float* coordenadas) {
 
     sub_vet(triangulon[1], triangulon[0], aux1);
     sub_vet(triangulon[2], triangulon[0], aux2);
-    sub_vet(Pn, triangulo[0], aux3);
+    sub_vet(Pn, triangulon[0], aux3);
     float d00 = prod_interno_r2(aux1,aux1);
     float d01 = prod_interno_r2(aux1, aux2);
     float d11 = prod_interno_r2(aux2, aux2);
@@ -802,7 +803,7 @@ void escalonar(float** matriz, int n, int m) {
     
     //printf("\t\t\t\tFunção de escalonamento\n");
     while (h < n && k < m) {
-        printf("%i %i\n", h, k);
+        //printf("%i %i\n", h, k);
         // i_max := argmax(i = h...m, |A(i, k)|)
         int max_i = 0;
         int i;
@@ -834,7 +835,7 @@ void escalonar(float** matriz, int n, int m) {
 
             h++;
             k++;
-            printf("%i %i\n", h, k);
+            //printf("%i %i\n", h, k);
         }
     }
     //printf("\t\t\tEscalonamento completo\n");
